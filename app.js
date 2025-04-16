@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
 // import cookieParser from "cookie-parser";
 // import session from "express-session";
 
@@ -28,6 +30,9 @@ app.use(express.urlencoded({ extended: true }));
 //     },
 //   })
 // );
+
+const swaggerDocument = YAML.load("./swagger.yaml");
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use("/api/products", productsRouter);
 

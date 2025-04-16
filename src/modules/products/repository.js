@@ -13,7 +13,15 @@ import Product from "../../models/productModel.js";
 export const insertProduct = async (productData) => {
   try {
     const product = new Product(productData);
-    return await product.save();
+    const savedProduct = await product.save();
+
+    // Convert to plain object and remove unwanted fields
+    const productObj = savedProduct.toObject();
+    delete productObj.createdAt;
+    delete productObj.updatedAt;
+    delete productObj.__v;
+
+    return productObj;
   } catch (error) {
     console.error("Error inserting product:", error);
     throw error;
@@ -21,12 +29,32 @@ export const insertProduct = async (productData) => {
 };
 
 /**
- * Get all products from the database
- * @returns {Promise<Array>} Array of product documents
+ * Get all products from the database with pagination
+ * @param {number} page - Page number (starting from 1)
+ * @param {number} limit - Number of products per page
+ * @returns {Promise<Object>} Products array and pagination metadata
  */
-export const getAllProducts = async () => {
+export const getAllProducts = async (page, limit) => {
   try {
-    return await Product.find();
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    const products = await Product.find()
+      .select("-createdAt -updatedAt -__v")
+      .skip(skip)
+      .limit(limit);
+
+    const totalProducts = await Product.countDocuments();
+
+    return {
+      products,
+      pagination: {
+        total: totalProducts,
+        page: page,
+        limit: limit,
+        pages: Math.ceil(totalProducts / limit),
+      },
+    };
   } catch (error) {
     console.error("Error fetching products:", error);
     throw error;

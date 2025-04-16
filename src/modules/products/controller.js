@@ -2,6 +2,7 @@ import {
   getImageCloudinaryUrl,
   insertNewProduct,
   uploadToCloudinary,
+  fetchAllProducts,
 } from "./services.js";
 import { isInteger, isValidString } from "./validation.js";
 
@@ -69,6 +70,29 @@ export const createNewProduct = async (req, res) => {
     return res
       .status(status)
       .json({ message: message, data: data, error: error });
+  } catch (error) {
+    return res.status(500).json({ message: error.message, error: error.error });
+  }
+};
+
+export const retrieveAllProducts = async (req, res) => {
+  try {
+    const { page, limit } = req.query;
+
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+
+    const { status, message, data, pagination, error } = await fetchAllProducts(
+      pageNum,
+      limitNum
+    );
+
+    return res.status(status).json({
+      message,
+      data,
+      pagination,
+      error,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message, error: error.error });
   }
