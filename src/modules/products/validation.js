@@ -17,8 +17,10 @@ export const createProductValidator = [
     .trim()
     .notEmpty()
     .withMessage("Product name is required")
+    .bail()
     .isLength({ min: 2, max: 100 })
     .withMessage("Product name must be between 2 and 100 characters")
+    .bail()
     .escape(),
 
   // Description validation
@@ -26,14 +28,17 @@ export const createProductValidator = [
     .trim()
     .notEmpty()
     .withMessage("Product description is required")
+    .bail()
     .isLength({ min: 10, max: 1000 })
     .withMessage("Description must be between 10 and 1000 characters")
+    .bail()
     .escape(),
 
   // Price validation
   body("price")
     .notEmpty()
     .withMessage("Price is required")
+    .bail()
     .isFloat({ min: 0.01 })
     .withMessage("Price must be a positive number"),
 
@@ -41,6 +46,7 @@ export const createProductValidator = [
   body("quantity")
     .notEmpty()
     .withMessage("Quantity is required")
+    .bail()
     .isInt({ min: 1 })
     .withMessage("Quantity must be a positive integer"),
 
@@ -106,6 +112,7 @@ export const productQuantityUpdateValidator = [
   param("id")
     .notEmpty()
     .withMessage("Product ID is required")
+    .bail()
     .isMongoId()
     .withMessage("Invalid Product ID format"),
 
@@ -113,6 +120,7 @@ export const productQuantityUpdateValidator = [
   body("quantity")
     .notEmpty()
     .withMessage("Quantity is required")
+    .bail()
     .isInt({ min: 1 })
     .withMessage("Quantity must be a positive integer"),
 
@@ -142,6 +150,7 @@ export const productDeletionValidator = [
   param("id")
     .notEmpty()
     .withMessage("Product ID is required")
+    .bail()
     .isMongoId()
     .withMessage("Invalid Product ID format"),
 
