@@ -3,6 +3,7 @@ import {
   insertProduct,
   getPaginatedProducts,
   updateProductQuantity,
+  deleteProduct,
 } from "./repository.js";
 import { Readable } from "stream";
 import path from "path";
@@ -121,6 +122,29 @@ export const changeProductQuantity = async (id, quantity) => {
     return {
       status: 500,
       message: `Error updating product quantity of ID ${id}`,
+      error: error.message,
+    };
+  }
+};
+
+export const removeProduct = async (id) => {
+  try {
+    const product = await deleteProduct(id);
+    if (!product) {
+      return {
+        status: 400,
+        message: `Could not find the product of ID: ${id}`,
+      };
+    }
+    return {
+      status: 200,
+      message: `Product with ID ${id} is deleted successfully`,
+      data: product,
+    };
+  } catch (error) {
+    return {
+      status: 500,
+      message: `Error deleting product of ID ${id}`,
       error: error.message,
     };
   }

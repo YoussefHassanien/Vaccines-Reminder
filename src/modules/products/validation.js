@@ -128,3 +128,32 @@ export const productQuantityUpdateValidator = [
     next();
   },
 ];
+
+/**
+ * Product Deletion Validation Middleware
+ *
+ * Validates and sanitizes:
+ * - id: required, valid MongoDB ObjectId
+ *
+ * Returns 400 error with validation details if validation fails
+ */
+export const productDeletionValidator = [
+  // Validate the `id` parameter
+  param("id")
+    .notEmpty()
+    .withMessage("Product ID is required")
+    .isMongoId()
+    .withMessage("Invalid Product ID format"),
+
+  // Process validation results
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        errors: errors.array(),
+        message: "Validation failed. Please check your input.",
+      });
+    }
+    next();
+  },
+];

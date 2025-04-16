@@ -6,16 +6,19 @@ import {
   createProductLimiter,
   getPaginatedProductsLimiter,
   productQuantityUpdateLimiter,
+  productDeletionLimiter,
 } from "./rateLimiter.js";
 import {
   createNewProduct,
   retrievePaginatedProducts,
   modifyProductQuantity,
+  eraseProduct,
 } from "./controller.js";
 import {
   createProductValidator,
   getPaginatedProductsValidator,
   productQuantityUpdateValidator,
+  productDeletionValidator,
 } from "./validation.js";
 
 productsRouter.post(
@@ -44,4 +47,10 @@ productsRouter.patch(
   modifyProductQuantity
 );
 
+productsRouter.delete(
+  "/admin/delete/:id",
+  productDeletionLimiter,
+  productDeletionValidator,
+  eraseProduct
+);
 export default productsRouter;

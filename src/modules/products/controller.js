@@ -4,6 +4,7 @@ import {
   uploadToCloudinary,
   fetchPaginatedProducts,
   changeProductQuantity,
+  removeProduct,
 } from "./services.js";
 
 export const createNewProduct = async (req, res) => {
@@ -75,11 +76,25 @@ export const modifyProductQuantity = async (req, res) => {
     const { id } = req.params;
     const { quantity } = req.body;
 
-    // Call the service to update the product quantity
     const { status, message, data, error } = await changeProductQuantity(
       id,
       parseInt(quantity, 10)
     );
+
+    return res.status(status).json({ message, data, error });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      error: error.error,
+    });
+  }
+};
+
+export const eraseProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { status, message, data, error } = await removeProduct(id);
 
     return res.status(status).json({ message, data, error });
   } catch (error) {

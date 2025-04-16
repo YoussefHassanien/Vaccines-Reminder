@@ -41,7 +41,24 @@ export const productQuantityUpdateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    message: "Too many products fetch attempts. Please try again in 1 minutes.",
+    message:
+      "Too many product quantity update attempts. Please try again in 1 minutes.",
+  },
+  skipSuccessfulRequests: false,
+});
+
+/**
+ * Rate limiter for product quantity update endpoint
+ * Limits requests to 10 per 1 minute per IP address
+ */
+export const productDeletionLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many product deletion attempts. Please try again in 1 minutes.",
   },
   skipSuccessfulRequests: false,
 });
