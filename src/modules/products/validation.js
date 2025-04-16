@@ -49,7 +49,7 @@ export const createProductValidator = [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        errors: errors.array(),
+        errors: errors.mapped(),
         message: "Validation failed. Please check your input.",
       });
     }
@@ -84,7 +84,7 @@ export const getPaginatedProductsValidator = [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        errors: errors.array(),
+        errors: errors.mapped(),
         message: "Validation failed. Please check your input.",
       });
     }
@@ -121,7 +121,7 @@ export const productQuantityUpdateValidator = [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        errors: errors.array(),
+        errors: errors.mapped(),
         message: "Validation failed. Please check your input.",
       });
     }
@@ -150,7 +150,7 @@ export const productDeletionValidator = [
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
-        errors: errors.array(),
+        errors: errors.mapped(),
         message: "Validation failed. Please check your input.",
       });
     }
