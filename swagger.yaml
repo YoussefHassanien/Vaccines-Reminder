@@ -1,0 +1,367 @@
+openapi: 3.0.0
+info:
+  title: Vaccines Reminder APIs
+  description: APIs for managing products in the Vaccines Reminder application
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /api/products/admin/add:
+    post:
+      tags:
+        - Products
+      summary: Create new product
+      description: Add a new product to the system (Admin only)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+                - description
+                - quantity
+                - image
+              properties:
+                name:
+                  type: string
+                  description: Product name
+                  example: "Vitamin D Supplement"
+                price:
+                  type: number
+                  format: float
+                  description: Product price (positive number)
+                  example: 29.99
+                description:
+                  type: string
+                  example: "High-quality vitamin D supplement for infants"
+                quantity:
+                  type: integer
+                  description: Product quantity (positive integer)
+                  example: 100
+                image:
+                  type: string
+                  format: binary
+                  description: Product image (JPG, PNG, GIF)
+      responses:
+        "201":
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product is successfully created"
+                  data:
+                    $ref: "#/components/schemas/Product"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product name is not a valid string"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many product creation attempts. Please try again in 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error inserting product"
+                  error:
+                    type: object
+
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      description: Retrieve a paginated list of available products using cursor-based pagination
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: MongoDB ObjectId of the last product from previous page
+          example: "60d21b4667d0d8992e610c85"
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of products per page
+          example: 10
+      responses:
+        "200":
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Products are successfully retrieved"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+                  nextCursor:
+                    type: string
+                    nullable: true
+                    description: ObjectId of the last item, use for next page request
+                    example: "60d21b4667d0d8992e610c86"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed. Please check your input."
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        msg:
+                          type: string
+                          example: "Cursor must be a valid MongoDB ObjectId"
+                        param:
+                          type: string
+                          example: "cursor"
+                        location:
+                          type: string
+                          example: "query"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many products fetch attempts. Please try again in 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error getting all products"
+                  error:
+                    type: string
+                    example: "Database connection error"
+
+  /api/products/admin/update-quantity/{id}:
+    patch:
+      tags:
+        - Products
+      summary: Update product quantity
+      description: Update the quantity of a product (Admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The ID of the product to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  description: The new quantity (non-negative integer)
+                  example: 50
+      responses:
+        "200":
+          description: Product quantity updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product with ID X updated successfully"
+                  data:
+                    $ref: "#/components/schemas/Product"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Could not find the product of ID: X"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many product quantity update attempts. Please try again in 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating product quantity of ID X"
+                  error:
+                    type: string
+                    example: "Database connection error"
+
+  /api/products/admin/delete/{id}:
+    delete:
+      tags:
+        - Products
+      summary: Delete a product
+      description: Delete a product by ID (Admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The ID of the product to delete
+      responses:
+        "200":
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product with ID X is deleted successfully"
+                  data:
+                    $ref: "#/components/schemas/Product"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Could not find the product of ID: X"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many product deletion attempts. Please try again in 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting product of ID X"
+                  error:
+                    type: string
+                    example: "Database connection error"
+
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c85"
+        name:
+          type: string
+          example: "Vitamin D Supplement"
+        price:
+          type: number
+          format: float
+          example: 29.99
+        description:
+          type: string
+          example: "High-quality vitamin D supplement for infants"
+        image:
+          type: string
+          example: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Products/1624291123123-vitamind.jpg"
+        quantity:
+          type: integer
+          example: 100
