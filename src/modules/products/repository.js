@@ -30,51 +30,24 @@ export const insertProduct = async (productData) => {
 
 /**
  * Get all products from the database with pagination
- * @param {number} page - Page number (starting from 1)
+ * @param {number} cursor - id of last retreived product
  * @param {number} limit - Number of products per page
  * @returns {Promise<Object>} Products array and pagination metadata
  */
-export const getAllProducts = async (page, limit) => {
+export const getPaginatedProducts = async (cursor, limit) => {
   try {
-    // Calculate skip value for pagination
-    const skip = (page - 1) * limit;
+    const query = cursor
+      ? { _id: { $gt: cursor } } // Fetch products with `_id` greater than the cursor
+      : {};
 
-    const products = await Product.find()
+    const products = await Product.find(query)
       .select("-createdAt -updatedAt -__v")
-      .skip(skip)
+      .sort({ _id: 1 }) // Sort by `_id` in ascending order
       .limit(limit);
 
-    const totalProducts = await Product.countDocuments();
-
-    return {
-      products,
-      pagination: {
-        total: totalProducts,
-        page: page,
-        limit: limit,
-        pages: Math.ceil(totalProducts / limit),
-      },
-    };
+    return products;
   } catch (error) {
-    console.error("Error fetching products:", error);
-    throw error;
-  }
-};
-
-/**
- * Get a product by ID
- * @param {string} id - Product ID
- * @returns {Promise<Object>} Product document
- */
-export const getProductById = async (id) => {
-  try {
-    const product = await Product.findById(id);
-    if (!product) {
-      throw new Error("Product not found");
-    }
-    return product;
-  } catch (error) {
-    console.error(`Error fetching product with ID ${id}:`, error);
+    console.error("Error fetching products by cursor:", error);
     throw error;
   }
 };
@@ -85,18 +58,26 @@ export const getProductById = async (id) => {
  * @param {Object} updateData - Updated product information
  * @returns {Promise<Object>} Updated product document
  */
-export const updateProduct = async (id, updateData) => {
+export const updateProductQuantity = async (id, quantity) => {
   try {
-    const product = await Product.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { quantity: quantity },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!product) {
       throw new Error("Product not found");
     }
 
-    return product;
+    const formattedProduct = product.toObject();
+    delete formattedProduct.createdAt;
+    delete formattedProduct.__v;
+
+    return formattedProduct;
   } catch (error) {
     console.error(`Error updating product with ID ${id}:`, error);
     throw error;

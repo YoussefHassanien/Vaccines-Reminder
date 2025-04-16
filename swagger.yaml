@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
-  title: Vaccines Reminder API
-  description: API for managing products in the Vaccines Reminder application
+  title: Vaccines Reminder APIs
+  description: APIs for managing products in the Vaccines Reminder application
   version: 1.0.0
 servers:
   - url: http://localhost:8000
@@ -85,7 +85,7 @@ paths:
                     example: 429
                   message:
                     type: string
-                    example: "Too many product creation attempts. Please try again in 1 minutes."
+                    example: "Too many product creation attempts. Please try again in 1 minute."
         "500":
           description: Server error
           content:
@@ -160,6 +160,43 @@ paths:
                   error:
                     type: object
                     nullable: true
+        "400":
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed. Please check your input."
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        msg:
+                          type: string
+                          example: "Page must be a positive integer"
+                        param:
+                          type: string
+                          example: "page"
+                        location:
+                          type: string
+                          example: "query"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many products fetch attempts. Please try again in 1 minute."
         "500":
           description: Server error
           content:
@@ -170,6 +207,106 @@ paths:
                   message:
                     type: string
                     example: "Error getting all products"
+                  error:
+                    type: string
+                    example: "Database connection error"
+
+  /api/products/admin/update-quantity/{id}:
+    patch:
+      tags:
+        - Products
+      summary: Update product quantity
+      description: Update the quantity of a product (Admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The ID of the product to update
+          requestBody:
+            required: true
+            content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - quantity
+                properties:
+                  quantity:
+                    type: integer
+                    description: The new quantity (non-negative integer)
+                    example: 50
+      responses:
+        "200":
+          description: Product quantity updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product quantity updated successfully"
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed. Please check your input."
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        msg:
+                          type: string
+                          example: "Quantity must be a positive integer"
+                        param:
+                          type: string
+                          example: "quantity"
+                        location:
+                          type: string
+                          example: "body"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many product quantity update attempts. Please try again in 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating product quantity"
                   error:
                     type: string
                     example: "Database connection error"

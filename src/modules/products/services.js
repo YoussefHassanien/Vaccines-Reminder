@@ -1,5 +1,9 @@
 import cloudinary from "../../../config/cloudinary.js";
-import { insertProduct, getAllProducts } from "./repository.js";
+import {
+  insertProduct,
+  getPaginatedProducts,
+  updateProductQuantity,
+} from "./repository.js";
 import { Readable } from "stream";
 import path from "path";
 
@@ -76,9 +80,9 @@ export const insertNewProduct = async (productData) => {
   }
 };
 
-export const fetchAllProducts = async (page, limit) => {
+export const fetchPaginatedProducts = async (cursor, limit) => {
   try {
-    const products = await getAllProducts(page, limit);
+    const products = await getPaginatedProducts(cursor, limit);
     if (!products) {
       return {
         status: 500,
@@ -94,6 +98,29 @@ export const fetchAllProducts = async (page, limit) => {
     return {
       status: 500,
       message: "Error getting all products",
+      error: error.message,
+    };
+  }
+};
+
+export const changeProductQuantity = async (id, quantity) => {
+  try {
+    const product = await updateProductQuantity(id, quantity);
+    if (!product) {
+      return {
+        status: 400,
+        message: `Could not find the product of ID: ${id}`,
+      };
+    }
+    return {
+      status: 200,
+      message: `Product with ID ${id} updated successfully`,
+      data: product,
+    };
+  } catch (error) {
+    return {
+      status: 500,
+      message: `Error updating product quantity of ID ${id}`,
       error: error.message,
     };
   }

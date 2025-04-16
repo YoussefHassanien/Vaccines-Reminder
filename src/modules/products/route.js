@@ -2,9 +2,21 @@ import { Router } from "express";
 const productsRouter = Router();
 import multerUploadHandler from "../../../config/multer.js";
 import multerErrorHandler from "../../middlewares/multerErrorHandler.js";
-import { createProductLimiter } from "./rateLimiter.js";
-import { createNewProduct, retrieveAllProducts } from "./controller.js";
-import { validateProduct } from "./validation.js";
+import {
+  createProductLimiter,
+  getPaginatedProductsLimiter,
+  productQuantityUpdateLimiter,
+} from "./rateLimiter.js";
+import {
+  createNewProduct,
+  retrievePaginatedProducts,
+  modifyProductQuantity,
+} from "./controller.js";
+import {
+  createProductValidator,
+  getPaginatedProductsValidator,
+  productQuantityUpdateValidator,
+} from "./validation.js";
 
 productsRouter.post(
   "/admin/add",
@@ -14,10 +26,22 @@ productsRouter.post(
       multerErrorHandler(err, req, res, next);
     });
   },
-  validateProduct,
+  createProductValidator,
   createNewProduct
 );
 
-productsRouter.get("/", retrieveAllProducts);
+productsRouter.get(
+  "/",
+  getPaginatedProductsLimiter,
+  getPaginatedProductsValidator,
+  retrievePaginatedProducts
+);
+
+productsRouter.patch(
+  "/admin/update-quantity/:id",
+  productQuantityUpdateLimiter,
+  productQuantityUpdateValidator,
+  modifyProductQuantity
+);
 
 export default productsRouter;
