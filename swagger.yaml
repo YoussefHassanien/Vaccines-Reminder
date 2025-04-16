@@ -104,16 +104,14 @@ paths:
       tags:
         - Products
       summary: Get all products
-      description: Retrieve a paginated list of available products
+      description: Retrieve a paginated list of available products using cursor-based pagination
       parameters:
         - in: query
-          name: page
+          name: cursor
           schema:
-            type: integer
-            minimum: 1
-            default: 1
-          description: Page number to retrieve
-          example: 1
+            type: string
+          description: MongoDB ObjectId of the last product from previous page
+          example: "60d21b4667d0d8992e610c85"
         - in: query
           name: limit
           schema:
@@ -133,30 +131,16 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Products successfully retrieved"
+                    example: "Products are successfully retrieved"
                   data:
                     type: array
                     items:
                       $ref: "#/components/schemas/Product"
-                  pagination:
-                    type: object
-                    properties:
-                      total:
-                        type: integer
-                        description: Total number of products
-                        example: 45
-                      page:
-                        type: integer
-                        description: Current page number
-                        example: 1
-                      limit:
-                        type: integer
-                        description: Products per page
-                        example: 10
-                      pages:
-                        type: integer
-                        description: Total number of pages
-                        example: 5
+                  nextCursor:
+                    type: string
+                    nullable: true
+                    description: ObjectId of the last item, use for next page request
+                    example: "60d21b4667d0d8992e610c86"
                   error:
                     type: object
                     nullable: true
@@ -177,10 +161,10 @@ paths:
                       properties:
                         msg:
                           type: string
-                          example: "Page must be a positive integer"
+                          example: "Cursor must be a valid MongoDB ObjectId"
                         param:
                           type: string
-                          example: "page"
+                          example: "cursor"
                         location:
                           type: string
                           example: "query"
@@ -224,19 +208,19 @@ paths:
           schema:
             type: string
           description: The ID of the product to update
-          requestBody:
-            required: true
-            content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - quantity
-                properties:
-                  quantity:
-                    type: integer
-                    description: The new quantity (non-negative integer)
-                    example: 50
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  description: The new quantity (non-negative integer)
+                  example: 50
       responses:
         "200":
           description: Product quantity updated successfully
@@ -247,11 +231,14 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Product quantity updated successfully"
+                    example: "Product with ID X updated successfully"
                   data:
                     $ref: "#/components/schemas/Product"
+                  error:
+                    type: object
+                    nullable: true
         "400":
-          description: Invalid input
+          description: Invalid input or product not found
           content:
             application/json:
               schema:
@@ -259,31 +246,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Validation failed. Please check your input."
-                  errors:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        msg:
-                          type: string
-                          example: "Quantity must be a positive integer"
-                        param:
-                          type: string
-                          example: "quantity"
-                        location:
-                          type: string
-                          example: "body"
-        "404":
-          description: Product not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Product not found"
+                    example: "Could not find the product of ID: X"
         "429":
           description: Too many requests
           content:
@@ -306,7 +269,73 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error updating product quantity"
+                    example: "Error updating product quantity of ID X"
+                  error:
+                    type: string
+                    example: "Database connection error"
+
+  /api/products/admin/delete/{id}:
+    delete:
+      tags:
+        - Products
+      summary: Delete a product
+      description: Delete a product by ID (Admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The ID of the product to delete
+      responses:
+        "200":
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product with ID X is deleted successfully"
+                  data:
+                    $ref: "#/components/schemas/Product"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Could not find the product of ID: X"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: number
+                    example: 429
+                  message:
+                    type: string
+                    example: "Too many product deletion attempts. Please try again in 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting product of ID X"
                   error:
                     type: string
                     example: "Database connection error"
@@ -336,9 +365,3 @@ components:
         quantity:
           type: integer
           example: 100
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
