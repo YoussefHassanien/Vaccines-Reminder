@@ -11,7 +11,6 @@ const productSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      default: 1,
       required: [true, "Price must be provided"],
       min: [1, "Price must be a postive number"],
     },
@@ -31,7 +30,6 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Quantity must be provided"],
       min: [0, "Quantity can't be negative"],
-      default: 1,
       validate: {
         validator: Number.isInteger,
         message: "Quantity must be an integer",
