@@ -75,6 +75,7 @@ const productSchema = new mongoose.Schema(
     },
     requiredAge: {
       type: String,
+      trim: true,
       required: [true, "Required age information must be provided"],
       minlength: [5, "Required age must be at least 5 characters"],
       maxlength: [30, "Required age must be of 30 characters maximum"],
@@ -82,6 +83,16 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Trim each feature string
+productSchema.pre("save", function (next) {
+  if (this.features && Array.isArray(this.features)) {
+    this.features = this.features.map((feature) =>
+      typeof feature === "string" ? feature.trim() : feature
+    );
+  }
+  next();
+});
 
 const Product = mongoose.model("Product", productSchema);
 export default Product;
