@@ -1,6 +1,6 @@
 import cloudinary from "../../../config/cloudinary.js";
 import {
-  insertProduct,
+  addNewProduct,
   getPaginatedProducts,
   updateProductQuantity,
   deleteProduct,
@@ -60,7 +60,7 @@ export const getImageCloudinaryUrl = (publicId) => {
 
 export const insertNewProduct = async (productData) => {
   try {
-    const newProduct = await insertProduct(productData);
+    const newProduct = await addNewProduct(productData);
     if (!newProduct) {
       return {
         status: 500,

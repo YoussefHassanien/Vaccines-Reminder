@@ -13,7 +13,8 @@ export const createNewProduct = async (req, res) => {
   }
 
   try {
-    const { name, description, price, quantity } = req.body;
+    const { name, description, price, quantity, features, requiredAge } =
+      req.body;
 
     // Upload image to Cloudinary
     const cloudinaryResult = await uploadToCloudinary(
@@ -38,6 +39,8 @@ export const createNewProduct = async (req, res) => {
       description,
       quantity: parseInt(quantity, 10),
       image: optimizedProductImageUrl,
+      requiredAge,
+      features,
     });
 
     return res.status(status).json({ message, data, error });

@@ -10,7 +10,7 @@ import Product from "../../models/productModel.js";
  * @param {number} productData.quantity - Product quantity
  * @returns {Promise<Object>} Created product document
  */
-export const insertProduct = async (productData) => {
+export const addNewProduct = async (productData) => {
   try {
     const product = new Product(productData);
     const savedProduct = await product.save();

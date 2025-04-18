@@ -26,10 +26,12 @@ paths:
                 - description
                 - quantity
                 - image
+                - features
+                - requiredAge
               properties:
                 name:
                   type: string
-                  description: Product name
+                  description: Product name (2-100 characters)
                   example: "Vitamin D Supplement"
                 price:
                   type: number
@@ -38,6 +40,7 @@ paths:
                   example: 29.99
                 description:
                   type: string
+                  description: Product description (20-1000 characters)
                   example: "High-quality vitamin D supplement for infants"
                 quantity:
                   type: integer
@@ -47,6 +50,21 @@ paths:
                   type: string
                   format: binary
                   description: Product image (JPG, PNG, GIF)
+                features:
+                  type: array
+                  description: List of product features (1-10 features, each 3-250 characters)
+                  items:
+                    type: string
+                  example:
+                    [
+                      "Sugar-free formula",
+                      "Easy to administer",
+                      "Pediatrician recommended",
+                    ]
+                requiredAge:
+                  type: string
+                  description: Required age information (5-30 characters)
+                  example: "0-12 months"
       responses:
         "201":
           description: Product created successfully
