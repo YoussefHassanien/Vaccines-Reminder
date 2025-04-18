@@ -383,3 +383,19 @@ components:
         quantity:
           type: integer
           example: 100
+        rating:
+          type: number
+          example: 0
+        features:
+          type: array
+          items:
+            type: string
+          example:
+            [
+              "Sugar-free formula",
+              "Easy to administer",
+              "Pediatrician recommended",
+            ]
+        requiredAge:
+          type: string
+          example: "6 months"
