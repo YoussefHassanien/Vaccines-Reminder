@@ -29,7 +29,7 @@ export const createProductValidator = [
     .notEmpty()
     .withMessage("Product description is required")
     .bail()
-    .isLength({ min: 10, max: 1000 })
+    .isLength({ min: 20, max: 1000 })
     .withMessage("Description must be between 10 and 1000 characters")
     .bail()
     .escape(),
@@ -39,7 +39,7 @@ export const createProductValidator = [
     .notEmpty()
     .withMessage("Price is required")
     .bail()
-    .isFloat({ min: 0.01 })
+    .isFloat({ min: 1 })
     .withMessage("Price must be a positive number"),
 
   // Quantity validation
