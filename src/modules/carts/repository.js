@@ -45,15 +45,15 @@ export const addCart = async (cartData) => {
  */
 export const getUserCartDetails = async (userId) => {
   try {
-    // Find carts for this user, sort by creation date (newest first), limit to 1
-    const cart = await Cart.findOne({ userId })
+    // Find carts for this user, sort by creation date (newest first)
+    const cart = await Cart.findOne({ userId, status: "Pending" })
       .sort({ createdAt: -1 }) // Sort by createdAt in descending order (newest first)
       .select("-__v -updatedAt -createdAt")
       .lean(); // Use lean() for better performance when you don't need Mongoose document methods
 
     return cart;
   } catch (error) {
-    console.error(`Error finding recent cart for user ${userId}:`, error);
+    console.error(`Error finding recent cart for user id: ${userId}`, error);
     throw error;
   }
 };
@@ -64,6 +64,9 @@ export const getUserById = async (userId) => {
     if (!user) {
       return false;
     }
-    return true;
-  } catch (error) {}
+    return user;
+  } catch (error) {
+    console.error(`Error finding user of user id: ${userId}`, error);
+    throw error;
+  }
 };
