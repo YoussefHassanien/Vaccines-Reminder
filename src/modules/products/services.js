@@ -74,7 +74,6 @@ export const insertNewProduct = async (productData) => {
     };
   } catch (error) {
     return {
-      status: 500,
       message: "Error inserting product",
       error: error.message,
     };
@@ -97,7 +96,6 @@ export const fetchPaginatedProducts = async (cursor, limit) => {
     };
   } catch (error) {
     return {
-      status: 500,
       message: "Error getting all products",
       error: error.message,
     };
@@ -120,7 +118,6 @@ export const changeProductQuantity = async (id, quantity) => {
     };
   } catch (error) {
     return {
-      status: 500,
       message: `Error updating product quantity of ID ${id}`,
       error: error.message,
     };
@@ -143,7 +140,6 @@ export const removeProduct = async (id) => {
     };
   } catch (error) {
     return {
-      status: 500,
       message: `Error deleting product of ID ${id}`,
       error: error.message,
     };
