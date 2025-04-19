@@ -3,15 +3,44 @@ import {
   addCartProduct,
   getUserCartDetails,
   getUserById,
+  getProductById,
 } from "./repository.js";
+import { formatMongoDbObjects } from "../../utils/dataFormatting.js";
 
-export const insertCart = async (cartData) => {
+export const insertCart = async (cart, products) => {
   try {
-    const cart = await addCart(cartData);
+    // 1. Create the cart first
+    const databaseCart = await addCart(cart);
+
+    // 2. Initialize array for added products
+    let cartProducts = [];
+
+    // 3. Loop through each product
+    for (const product of products) {
+      // Add the cart ID to each product
+      product.cartId = databaseCart._id;
+
+      // Add the product to the cart
+      const addedCartProduct = await addCartProduct(product);
+      cartProducts.push(addedCartProduct);
+    }
+
+    const formattedCart = formatMongoDbObjects(databaseCart);
+
+    // Check that all products have been added successfully
+    if (cartProducts.length !== products.length) {
+      return {
+        statusCode: 400,
+        message: "Could not insert all cart products",
+      };
+    }
     return {
       statusCode: 201,
       message: "Cart is successfully created",
-      data: cart,
+      data: {
+        cart: formattedCart,
+        products,
+      },
     };
   } catch (error) {
     return {
@@ -67,3 +96,28 @@ export const fetchUserById = async (userId) => {
     };
   }
 };
+
+export const fetchProductById = async (productId) => {
+  try {
+    const product = await getProductById(productId);
+    if (!product) {
+      return {
+        statusCode: 404,
+        message: `Could not find product of product id: ${productId}`,
+      };
+    }
+    return {
+      statusCode: 200,
+      message: `Product of product id: ${productId}, retrieved successfully`,
+      data: product,
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      message: `Error finding product of product id: ${productId}`,
+      error: error.message,
+    };
+  }
+};
+
+export const insertCartProduct = async () => {};

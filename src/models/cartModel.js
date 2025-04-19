@@ -71,7 +71,7 @@ const cartSchema = new mongoose.Schema(
     paymentType: {
       type: String,
       enum: ["Cash", "Online"],
-      default: "online",
+      default: "Online",
       required: [true, "Payment type must be specified"],
     },
   },
@@ -79,6 +79,9 @@ const cartSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Add compound unique index for cartId + productId
+cartSchema.index({ userId: 1, _id: 1 }, { unique: true });
 
 const Cart = mongoose.model("Cart", cartSchema);
 export default Cart;

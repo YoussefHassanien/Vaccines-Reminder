@@ -358,6 +358,319 @@ paths:
                     type: string
                     example: "Database connection error"
 
+  /api/carts:
+    post:
+      tags:
+        - Carts
+      summary: Create new cart
+      description: Create a new cart with products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cart
+                - products
+              properties:
+                cart:
+                  type: object
+                  required:
+                    - productsCount
+                    - totalPrice
+                    - governorate
+                    - city
+                    - street
+                    - buildingNumber
+                    - appartmentNumber
+                  properties:
+                    productsCount:
+                      type: integer
+                      description: Total count of products in the cart
+                      example: 3
+                    totalPrice:
+                      type: number
+                      format: float
+                      description: Total price of the cart
+                      example: 149.97
+                    status:
+                      type: string
+                      enum: ["Pending", "Confirmed", "Waiting for cash payment"]
+                      default: "Pending"
+                      description: Cart status
+                      example: "Pending"
+                    governorate:
+                      type: string
+                      description: Delivery address governorate (4-30 characters)
+                      example: "Cairo"
+                    city:
+                      type: string
+                      description: Delivery address city (4-50 characters)
+                      example: "1st Settlement"
+                    street:
+                      type: string
+                      description: Delivery address street (4-100 characters)
+                      example: "Main Street"
+                    buildingNumber:
+                      type: integer
+                      description: Building number (positive integer)
+                      example: 123
+                    appartmentNumber:
+                      type: integer
+                      description: Apartment number (positive integer)
+                      example: 45
+                    paymentType:
+                      type: string
+                      enum: ["Cash", "Online"]
+                      default: "Online"
+                      description: Payment method
+                      example: "Cash"
+                products:
+                  type: array
+                  description: Array of products to add to the cart
+                  items:
+                    type: object
+                    required:
+                      - productId
+                      - quantity
+                      - price
+                    properties:
+                      productId:
+                        type: string
+                        format: uuid
+                        description: MongoDB ObjectId of the product
+                        example: "60d21b4667d0d8992e610c85"
+                      quantity:
+                        type: integer
+                        minimum: 1
+                        description: Quantity of this product
+                        example: 2
+                      price:
+                        type: number
+                        format: float
+                        description: Total price for this product (quantity * unit price)
+                        example: 59.98
+      responses:
+        "201":
+          description: Cart created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart is successfully created"
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: "#/components/schemas/Cart"
+                      products:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CartProduct"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        msg:
+                          type: string
+                          example: "Cart must contain at least one product"
+                        path:
+                          type: string
+                          example: "products"
+                        location:
+                          type: string
+                          example: "body"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product of id: 60d21b4667d0d8992e610c85 is not found in database"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cart creation attempts. Please try again later."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error inserting cart"
+                  error:
+                    type: string
+                    example: "Server error"
+
+  /api/carts/add-product:
+    post:
+      tags:
+        - Carts
+      summary: Add product to cart
+      description: Add a product to an existing cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cartId
+                - productId
+                - quantity
+                - price
+              properties:
+                cartId:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the cart
+                  example: "60d21b4667d0d8992e610c85"
+                productId:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the product
+                  example: "60d21b4667d0d8992e610c86"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: Quantity of the product to add
+                  example: 1
+                price:
+                  type: number
+                  format: float
+                  description: Total price for this product (quantity * unit price)
+                  example: 29.99
+      responses:
+        "200":
+          description: Product added to cart successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product successfully added to cart"
+                  data:
+                    type: object
+                    properties:
+                      addedCartProduct:
+                        $ref: "#/components/schemas/CartProduct"
+                      cart:
+                        $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+        "404":
+          description: Cart or product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart or product not found"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error inserting cart product"
+                  error:
+                    type: string
+                    example: "Server error"
+
+  /api/carts/user-cart:
+    get:
+      tags:
+        - Carts
+      summary: Get user's active cart
+      description: Get the most recent pending cart for the current user
+      responses:
+        "200":
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User cart of user id: 123, retrieved successfully"
+                  data:
+                    $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+        "404":
+          description: No cart found for user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Could not find user cart of user id: 123"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error finding user cart"
+                  error:
+                    type: string
+                    example: "Server error"
+
 components:
   schemas:
     Product:
@@ -399,3 +712,66 @@ components:
         requiredAge:
           type: string
           example: "6 months"
+    Cart:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c87"
+        userId:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c85"
+        productsCount:
+          type: integer
+          example: 3
+        totalPrice:
+          type: number
+          format: float
+          example: 149.97
+        status:
+          type: string
+          enum: ["Pending", "Confirmed", "Waiting for cash payment"]
+          example: "Pending"
+        governorate:
+          type: string
+          example: "Cairo"
+        city:
+          type: string
+          example: "1st Settlement"
+        street:
+          type: string
+          example: "Main Street"
+        buildingNumber:
+          type: integer
+          example: 123
+        appartmentNumber:
+          type: integer
+          example: 45
+        paymentType:
+          type: string
+          enum: ["Cash", "Online"]
+          example: "Cash"
+    CartProduct:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c88"
+        cartId:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c87"
+        productId:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c85"
+        quantity:
+          type: integer
+          example: 2
+        price:
+          type: number
+          format: float
+          example: 59.98
