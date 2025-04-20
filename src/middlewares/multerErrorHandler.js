@@ -18,25 +18,21 @@ const multerErrorHandler = (err, req, res, next) => {
     switch (err.code) {
       case "LIMIT_FILE_SIZE":
         return res.status(400).json({
-          success: false,
           message: "File too large. Maximum size is 5MB.",
         });
 
       case "LIMIT_UNEXPECTED_FILE":
         return res.status(400).json({
-          success: false,
           message: "Unexpected field or too many files provided.",
         });
 
       case "LIMIT_FILE_COUNT":
         return res.status(400).json({
-          success: false,
           message: "Too many files uploaded. Please upload fewer files.",
         });
 
       default:
         return res.status(500).json({
-          success: false,
           message: `File upload error: ${err.message}`,
         });
     }
@@ -44,8 +40,7 @@ const multerErrorHandler = (err, req, res, next) => {
 
   // Handle errors from Cloudinary or file type validation
   if (err.message && err.message.includes("Unsupported file type")) {
-    return res.status(400).json({
-      success: false,
+    return res.status(415).json({
       message: "Unsupported file type. Only images and PDFs are allowed.",
     });
   }
@@ -53,7 +48,6 @@ const multerErrorHandler = (err, req, res, next) => {
   // Handle Cloudinary errors
   if (err.message && err.message.includes("Cloudinary")) {
     return res.status(500).json({
-      success: false,
       message: "Error uploading to cloud storage. Please try again later.",
     });
   }
