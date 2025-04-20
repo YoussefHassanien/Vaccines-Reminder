@@ -8,6 +8,8 @@ import YAML from "yamljs";
 // import session from "express-session";
 
 import productsRouter from "./src/modules/products/route.js";
+import authRouter from "./src/modules/authentication/route.js";
+import cartsRouter from "./src/modules/carts/route.js";
 
 const app = express();
 
@@ -35,5 +37,7 @@ const swaggerDocument = YAML.load("./swagger.yaml");
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use("/api/products", productsRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/carts", cartsRouter);
 
 export default app;

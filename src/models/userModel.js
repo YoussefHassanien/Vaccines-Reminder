@@ -13,6 +13,9 @@ const userSchema = new mongoose.Schema(
       trim: true,
       required: [true, "Last name must be provided"],
     },
+    slug: {
+      type: String,
+    },
     email: {
       type: String,
       trim: true,
@@ -69,7 +72,7 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Address building number must be provided"],
     },
-    appartmentNumber: {
+    apartmentNumber: {
       type: Number,
       required: [true, "Address appartment number must be provided"],
     },

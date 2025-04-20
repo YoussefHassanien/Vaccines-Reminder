@@ -20,10 +20,16 @@ import {
   productQuantityUpdateValidator,
   productDeletionValidator,
 } from "./validation.js";
+import {
+  isAuthenticated,
+  isAuthorized,
+} from "../../middlewares/authentication.js";
 
 productsRouter.post(
   "/admin/add",
   createProductLimiter,
+  isAuthenticated,
+  isAuthorized,
   (req, res, next) => {
     multerUploadHandler.single("image")(req, res, (err) => {
       multerErrorHandler(err, req, res, next);
@@ -36,6 +42,7 @@ productsRouter.post(
 productsRouter.get(
   "/",
   getPaginatedProductsLimiter,
+  isAuthenticated,
   getPaginatedProductsValidator,
   retrievePaginatedProducts
 );
@@ -43,6 +50,8 @@ productsRouter.get(
 productsRouter.patch(
   "/admin/update-quantity/:id",
   productQuantityUpdateLimiter,
+  isAuthenticated,
+  isAuthorized,
   productQuantityUpdateValidator,
   modifyProductQuantity
 );
@@ -50,6 +59,8 @@ productsRouter.patch(
 productsRouter.delete(
   "/admin/delete/:id",
   productDeletionLimiter,
+  isAuthenticated,
+  isAuthorized,
   productDeletionValidator,
   eraseProduct
 );
