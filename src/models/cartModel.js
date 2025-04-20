@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import User from "./userModel.js";
 
 const cartSchema = new mongoose.Schema(
   {
@@ -82,6 +83,29 @@ const cartSchema = new mongoose.Schema(
 
 // Add compound unique index for cartId + productId
 cartSchema.index({ userId: 1, _id: 1 }, { unique: true });
+
+// Insure that the cart address details is the same as user details if the payment type is Online
+cartSchema.pre("save", async function () {
+  try {
+    // Only run this logic when creating a new document or changing payment type
+    if (this.isNew || this.isModified("paymentType")) {
+      const user = await User.findById(this.userId);
+      if (!user) throw new Error("User not found");
+
+      if (this.paymentType === "Online") {
+        this.governorate = user.governorate;
+        this.city = user.city;
+        this.street = user.street;
+        this.buildingNumber = user.buildingNumber;
+        this.appartmentNumber = user.appartmentNumber;
+      }
+    }
+  } catch (error) {
+    // Log the error but don't stop the save operation
+    console.error("Error in cart pre-save hook:", error);
+    throw error;
+  }
+});
 
 const Cart = mongoose.model("Cart", cartSchema);
 export default Cart;
