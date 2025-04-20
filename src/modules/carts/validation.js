@@ -186,7 +186,7 @@ export const createCartValidator = [
     .withMessage("Street must be between 4 and 100 characters")
     .bail()
     .escape(),
-
+  
   body("cart.buildingNumber")
     .custom(validateAddressField("Building number"))
     .bail()
@@ -194,7 +194,7 @@ export const createCartValidator = [
     .isInt({ min: 1 })
     .withMessage("Building number must be a positive integer"),
 
-  body("cart.appartmentNumber")
+  body("cart.apartmentNumber")
     .custom(validateAddressField("Apartment number"))
     .bail()
     .optional({ checkFalsy: true })
