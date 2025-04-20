@@ -32,7 +32,9 @@ const cartSchema = new mongoose.Schema(
     governorate: {
       type: String,
       trim: true,
-      required: [true, "Address governorate must be provided"],
+      required: function () {
+        return this.paymentType !== "Online";
+      },
       default: "Cairo",
       minlength: [4, "Address governorate must be at least 4 characters"],
       maxlength: [30, "Address governorate must be of 30 characters maximum"],
@@ -40,29 +42,37 @@ const cartSchema = new mongoose.Schema(
     city: {
       type: String,
       trim: true,
-      required: [true, "Address city must be provided"],
+      required: function () {
+        return this.paymentType !== "Online";
+      },
       minlength: [4, "Address city must be at least 4 characters"],
       maxlength: [50, "Address city must be of 30 characters maximum"],
     },
     street: {
       type: String,
       trim: true,
-      required: [true, "Address street must be provided"],
+      required: function () {
+        return this.paymentType !== "Online";
+      },
       minlength: [4, "Address street must be at least 4 characters"],
       maxlength: [100, "Address street must be of 30 characters maximum"],
     },
     buildingNumber: {
       type: Number,
-      required: [true, "Address building number must be provided"],
+      required: function () {
+        return this.paymentType !== "Online";
+      },
       min: [1, "Building number must be a positive integer"],
       validate: {
         validator: Number.isInteger,
         message: "Building number must be an integer",
       },
     },
-    appartmentNumber: {
+    apartmentNumber: {
       type: Number,
-      required: [true, "Address appartment number must be provided"],
+      required: function () {
+        return this.paymentType !== "Online";
+      },
       min: [1, "Appartment number must be a positive integer"],
       validate: {
         validator: Number.isInteger,
@@ -97,7 +107,7 @@ cartSchema.pre("save", async function () {
         this.city = user.city;
         this.street = user.street;
         this.buildingNumber = user.buildingNumber;
-        this.appartmentNumber = user.appartmentNumber;
+        this.apartmentNumber = user.apartmentNumber;
       }
     }
   } catch (error) {

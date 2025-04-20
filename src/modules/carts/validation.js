@@ -4,16 +4,14 @@ import mongoose from "mongoose";
 import { fetchProductById } from "./services.js";
 
 // New helper function for address field validation
-const validateAddressField = (fieldName, errorMessage) => {
+const validateAddressField = () => {
   return (value, { req }) => {
     // Skip validation if payment type is Online
     if (req.body.cart.paymentType === "Online") return true;
 
     // Otherwise require the field for Cash payments
     if (value === undefined || value === null || value === "") {
-      throw new Error(
-        `${errorMessage || fieldName} is required for Cash payment`
-      );
+      return false; // Validation failed
     }
     return true;
   };
@@ -158,7 +156,8 @@ export const createCartValidator = [
 
   // Conditional address validations based on payment type
   body("cart.governorate")
-    .custom(validateAddressField("Governorate"))
+    .custom(validateAddressField)
+    .withMessage(`Governorate is required for Cash payment`)
     .bail()
     .optional({ checkFalsy: true })
     .trim()
@@ -168,7 +167,8 @@ export const createCartValidator = [
     .escape(),
 
   body("cart.city")
-    .custom(validateAddressField("City"))
+    .custom(validateAddressField)
+    .withMessage(`City is required for Cash payment`)
     .bail()
     .optional({ checkFalsy: true })
     .trim()
@@ -178,7 +178,8 @@ export const createCartValidator = [
     .escape(),
 
   body("cart.street")
-    .custom(validateAddressField("Street"))
+    .custom(validateAddressField)
+    .withMessage(`Street is required for Cash payment`)
     .bail()
     .optional({ checkFalsy: true })
     .trim()
@@ -186,16 +187,18 @@ export const createCartValidator = [
     .withMessage("Street must be between 4 and 100 characters")
     .bail()
     .escape(),
-  
+
   body("cart.buildingNumber")
-    .custom(validateAddressField("Building number"))
+    .custom(validateAddressField)
+    .withMessage(`Building Number is required for Cash payment`)
     .bail()
     .optional({ checkFalsy: true })
     .isInt({ min: 1 })
     .withMessage("Building number must be a positive integer"),
 
   body("cart.apartmentNumber")
-    .custom(validateAddressField("Apartment number"))
+    .custom(validateAddressField)
+    .withMessage(`Apartment Number is required for Cash payment`)
     .bail()
     .optional({ checkFalsy: true })
     .isInt({ min: 1 })
