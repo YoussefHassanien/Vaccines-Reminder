@@ -388,12 +388,12 @@ paths:
                     productsCount:
                       type: integer
                       description: Total count of products in the cart
-                      example: 3
+                      example: 5
                     totalPrice:
                       type: number
                       format: float
                       description: Total price of the cart
-                      example: 149.97
+                      example: 341.5
                     status:
                       type: string
                       enum: ["Pending", "Confirmed", "Waiting for cash payment"]
@@ -440,17 +440,24 @@ paths:
                         type: string
                         format: uuid
                         description: MongoDB ObjectId of the product
-                        example: "60d21b4667d0d8992e610c85"
+                        example: "6802bcef489dbe50c70aad5b"
                       quantity:
                         type: integer
                         minimum: 1
                         description: Quantity of this product
-                        example: 2
+                        example: 3
                       price:
                         type: number
                         format: float
                         description: Total price for this product (quantity * unit price)
-                        example: 59.98
+                        example: 181.5
+                  example:
+                    - productId: "6802bcef489dbe50c70aad5b"
+                      quantity: 3
+                      price: 181.5
+                    - productId: "6803e59f5cfbd3f8d54aaec9"
+                      quantity: 2
+                      price: 160
       responses:
         "201":
           description: Cart created successfully
@@ -467,13 +474,9 @@ paths:
                     properties:
                       cart:
                         $ref: "#/components/schemas/Cart"
-                      products:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/CartProduct"
-                  error:
-                    type: object
-                    nullable: true
+                    error:
+                      type: object
+                      nullable: true
         "400":
           description: Invalid input
           content:

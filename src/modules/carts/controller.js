@@ -88,5 +88,3 @@ export const retreiveUserCartDetails = async (req, res) => {
       .json({ message: error.message, error: error.error });
   }
 };
-
-export const createCartProduct = async (req, res) => {};

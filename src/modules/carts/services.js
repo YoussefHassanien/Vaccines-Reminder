@@ -1,6 +1,6 @@
 import {
   addCart,
-  // addCartProduct,
+  addCartProduct,
   getUserCartDetails,
   getUserById,
   getProductById,
@@ -127,5 +127,3 @@ export const fetchProductById = async (productId) => {
     };
   }
 };
-
-// export const insertCartProduct = async () => {};
