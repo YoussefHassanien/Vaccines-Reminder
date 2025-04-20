@@ -8,13 +8,21 @@ import {
   createCartLimiter,
   retrieveUserCartDetailsLimiter,
 } from "./rateLimiter.js";
+import { isAuthenticated } from "../../middlewares/authentication.js";
 
 const cartsRouter = express.Router();
 
-cartsRouter.post("", createCartLimiter, createCartValidator, createCart);
+cartsRouter.post(
+  "",
+  createCartLimiter,
+  isAuthenticated,
+  createCartValidator,
+  createCart
+);
 cartsRouter.get(
   "/user-cart/:cartId",
   retrieveUserCartDetailsLimiter,
+  isAuthenticated,
   retrieveUserCartDetailsValidator,
   retreiveUserCartDetails
 );

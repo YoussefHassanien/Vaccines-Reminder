@@ -1,5 +1,7 @@
-import { body, validationResult, param } from "express-validator";
+import { body, param } from "express-validator";
+import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 import mongoose from "mongoose";
+import { fetchProductById } from "./services.js"; // Add this import
 
 /**
  * Validation middleware for cart creation
@@ -31,9 +33,6 @@ export const createCartValidator = [
   // Validate product IDs are unique
   body("products")
     .custom((products) => {
-      // Skip validation if products array is missing or not an array
-      if (!Array.isArray(products)) return true;
-
       // Create a set of product IDs to check for duplicates
       const productIds = new Set();
 
@@ -58,6 +57,31 @@ export const createCartValidator = [
   body("products.*.price")
     .isFloat({ min: 0.01 })
     .withMessage("Product price must be a positive number"),
+
+  // Product price validation against database - add this custom validator
+  body("products").custom(async (products, { req }) => {
+    // Check each product's price against database
+    for (const product of products) {
+      const productResponse = await fetchProductById(product.productId);
+
+      // If product not found, throw error
+      if (productResponse.statusCode !== 200) {
+        throw new Error(`Product not found: ${productResponse.message}`);
+      }
+
+      const databaseProduct = productResponse.data;
+      const expectedPrice = Number(databaseProduct.price * product.quantity);
+
+      // Compare with the provided price (with small tolerance for floating point)
+      if (Math.abs(Number(product.price) - expectedPrice) > 0.01) {
+        throw new Error(
+          `Product ${product.productId} price incorrect: expected ${expectedPrice} but got ${product.price}`
+        );
+      }
+    }
+
+    return true;
+  }),
 
   // Totals validation - custom validator to ensure consistency
   body().custom((body) => {
@@ -165,17 +189,7 @@ export const createCartValidator = [
     .isIn(["Cash", "Online"])
     .withMessage("Payment type must be either 'Cash' or 'Online'"),
 
-  // Process validation results
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: "Validation failed",
-        errors: errors.mapped(),
-      });
-    }
-    next();
-  },
+  validatorMiddleware,
 ];
 
 /**
@@ -192,15 +206,5 @@ export const retrieveUserCartDetailsValidator = [
     .custom((value) => mongoose.Types.ObjectId.isValid(value))
     .withMessage("Invalid cart ID format. Must be a valid MongoDB ObjectId"),
 
-  // Process validation results
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        message: "Validation failed",
-        errors: errors.mapped(),
-      });
-    }
-    next();
-  },
+  validatorMiddleware,
 ];

@@ -1,4 +1,5 @@
-import { body, query, validationResult, param } from "express-validator";
+import { body, query, param } from "express-validator";
+import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 
 /**
  * Product validation middleware
@@ -118,17 +119,7 @@ export const createProductValidator = [
     .bail()
     .escape(),
 
-  // Process validation results
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        errors: errors.mapped(),
-        message: "Validation failed. Please check your input.",
-      });
-    }
-    next();
-  },
+  validatorMiddleware,
 ];
 
 /**
@@ -153,17 +144,7 @@ export const getPaginatedProductsValidator = [
     .isInt({ min: 1, max: 100 })
     .withMessage("Limit must be a positive integer between 1 and 100"),
 
-  // Process validation results
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        errors: errors.mapped(),
-        message: "Validation failed. Please check your input.",
-      });
-    }
-    next();
-  },
+  validatorMiddleware,
 ];
 
 /**
@@ -192,17 +173,7 @@ export const productQuantityUpdateValidator = [
     .isInt({ min: 1 })
     .withMessage("Quantity must be a positive integer"),
 
-  // Process validation results
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        errors: errors.mapped(),
-        message: "Validation failed. Please check your input.",
-      });
-    }
-    next();
-  },
+  validatorMiddleware,
 ];
 
 /**
@@ -222,15 +193,5 @@ export const productDeletionValidator = [
     .isMongoId()
     .withMessage("Invalid Product ID format"),
 
-  // Process validation results
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        errors: errors.mapped(),
-        message: "Validation failed. Please check your input.",
-      });
-    }
-    next();
-  },
+  validatorMiddleware,
 ];
