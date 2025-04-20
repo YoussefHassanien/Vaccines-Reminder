@@ -363,7 +363,9 @@ paths:
       tags:
         - Carts
       summary: Create new cart
-      description: Create a new cart with products
+      description: >
+        Create a new cart with products. Address fields (governorate, city, street, buildingNumber, apartmentNumber) 
+        are required only for Cash payments. For Online payments, the user's registered address is automatically used.
       requestBody:
         required: true
         content:
@@ -379,11 +381,7 @@ paths:
                   required:
                     - productsCount
                     - totalPrice
-                    - governorate
-                    - city
-                    - street
-                    - buildingNumber
-                    - appartmentNumber
+                    - paymentType
                   properties:
                     productsCount:
                       type: integer
@@ -394,37 +392,31 @@ paths:
                       format: float
                       description: Total price of the cart
                       example: 341.5
-                    status:
-                      type: string
-                      enum: ["Pending", "Confirmed", "Waiting for cash payment"]
-                      default: "Pending"
-                      description: Cart status
-                      example: "Pending"
                     governorate:
                       type: string
-                      description: Delivery address governorate (4-30 characters)
+                      description: "Delivery address governorate (4-30 characters, required only for Cash payments)"
                       example: "Cairo"
                     city:
                       type: string
-                      description: Delivery address city (4-50 characters)
+                      description: "Delivery address city (4-50 characters, required only for Cash payments)"
                       example: "1st Settlement"
                     street:
                       type: string
-                      description: Delivery address street (4-100 characters)
+                      description: "Delivery address street (4-100 characters, required only for Cash payments)"
                       example: "Main Street"
                     buildingNumber:
                       type: integer
-                      description: Building number (positive integer)
+                      description: "Building number (positive integer, required only for Cash payments)"
                       example: 123
-                    appartmentNumber:
+                    apartmentNumber:
                       type: integer
-                      description: Apartment number (positive integer)
+                      description: "Apartment number (positive integer, required only for Cash payments)"
                       example: 45
                     paymentType:
                       type: string
                       enum: ["Cash", "Online"]
                       default: "Online"
-                      description: Payment method
+                      description: "Payment method (Online payments use user's registered address automatically)"
                       example: "Cash"
                 products:
                   type: array
@@ -520,7 +512,11 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Too many cart creation attempts. Please try again later."
+                    example: "Too many cart creation attempts. Please try again after 15 minutes."
+                  retryAfter:
+                    type: integer
+                    description: "Number of seconds to wait before retrying"
+                    example: 900
         "500":
           description: Server error
           content:
@@ -534,6 +530,8 @@ paths:
                   error:
                     type: string
                     example: "Server error"
+      security:
+        - BearerAuth: []
 
   /api/carts/user-cart/{cartId}:
     get:
@@ -652,6 +650,8 @@ paths:
                   error:
                     type: string
                     example: "Server error"
+      security:
+        - BearerAuth: []
 
 components:
   schemas:
@@ -696,6 +696,9 @@ components:
           example: "6 months"
     Cart:
       type: object
+      description: >
+        Represents a user's shopping cart. Address fields are required for Cash payments.
+        For Online payments, these fields are automatically populated from the user's registered address.
       properties:
         _id:
           type: string
@@ -731,6 +734,9 @@ components:
         appartmentNumber:
           type: integer
           example: 45
+        apartmentNumber:
+          type: integer
+          example: 45
         paymentType:
           type: string
           enum: ["Cash", "Online"]
@@ -757,3 +763,9 @@ components:
           type: number
           format: float
           example: 59.98
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: Bearer
+      bearerFormat: JWT
+      description: JWT token obtained after authentication

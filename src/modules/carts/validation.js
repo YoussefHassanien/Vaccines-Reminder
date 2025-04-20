@@ -1,7 +1,23 @@
 import { body, param } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 import mongoose from "mongoose";
-import { fetchProductById } from "./services.js"; // Add this import
+import { fetchProductById } from "./services.js";
+
+// New helper function for address field validation
+const validateAddressField = (fieldName, errorMessage) => {
+  return (value, { req }) => {
+    // Skip validation if payment type is Online
+    if (req.body.cart.paymentType === "Online") return true;
+
+    // Otherwise require the field for Cash payments
+    if (value === undefined || value === null || value === "") {
+      throw new Error(
+        `${errorMessage || fieldName} is required for Cash payment`
+      );
+    }
+    return true;
+  };
+};
 
 /**
  * Validation middleware for cart creation
@@ -9,12 +25,12 @@ import { fetchProductById } from "./services.js"; // Add this import
  * Validates all required cart fields according to the cart model schema:
  * - productsCount: Positive integer, required matching the sum of quantaties given in the cartProductsData Array
  * - totalPrice: Positive number, required and matching the sum of prices given in the cartProductsData Array
- * - governorate: String, 4-30 chars, required
- * - city: String, 4-50 chars, required
- * - street: String, 4-100 chars, required
- * - buildingNumber: Positive integer, required
- * - appartmentNumber: Positive integer, required
- * - paymentType: Optional, enum ["cash", "online"]
+ * - governorate: String, 4-30 chars, required for Cash payments only
+ * - city: String, 4-50 chars, required for Cash payments only
+ * - street: String, 4-100 chars, required for Cash payments only
+ * - buildingNumber: Positive integer, required for Cash payments only
+ * - appartmentNumber: Positive integer, required for Cash payments only
+ * - paymentType: Optional, enum ["Cash", "Online"]
  */
 export const createCartValidator = [
   // Products array validation
@@ -133,61 +149,57 @@ export const createCartValidator = [
     .isFloat({ min: 1 })
     .withMessage("Total price must be a positive number"),
 
-  // Governorate validation
+  // Payment type validation (must be validated early since other validations depend on it)
+  body("cart.paymentType")
+    .optional()
+    .escape()
+    .isIn(["Cash", "Online"])
+    .withMessage("Payment type must be either 'Cash' or 'Online'"),
+
+  // Conditional address validations based on payment type
   body("cart.governorate")
-    .notEmpty()
-    .withMessage("Governorate is required")
+    .custom(validateAddressField("Governorate"))
     .bail()
+    .optional({ checkFalsy: true })
     .trim()
     .isLength({ min: 4, max: 30 })
     .withMessage("Governorate must be between 4 and 30 characters")
     .bail()
     .escape(),
 
-  // City validation
   body("cart.city")
-    .notEmpty()
-    .withMessage("City is required")
+    .custom(validateAddressField("City"))
     .bail()
+    .optional({ checkFalsy: true })
     .trim()
     .isLength({ min: 4, max: 50 })
     .withMessage("City must be between 4 and 50 characters")
     .bail()
     .escape(),
 
-  // Street validation
   body("cart.street")
-    .notEmpty()
-    .withMessage("Street is required")
+    .custom(validateAddressField("Street"))
     .bail()
+    .optional({ checkFalsy: true })
     .trim()
     .isLength({ min: 4, max: 100 })
     .withMessage("Street must be between 4 and 100 characters")
     .bail()
     .escape(),
 
-  // Building number validation
   body("cart.buildingNumber")
-    .notEmpty()
-    .withMessage("Building number is required")
+    .custom(validateAddressField("Building number"))
     .bail()
+    .optional({ checkFalsy: true })
     .isInt({ min: 1 })
     .withMessage("Building number must be a positive integer"),
 
-  // Apartment number validation
   body("cart.appartmentNumber")
-    .notEmpty()
-    .withMessage("Apartment number is required")
+    .custom(validateAddressField("Apartment number"))
     .bail()
+    .optional({ checkFalsy: true })
     .isInt({ min: 1 })
     .withMessage("Apartment number must be a positive integer"),
-
-  // Payment type validation (optional, has default)
-  body("cart.paymentType")
-    .optional()
-    .escape()
-    .isIn(["Cash", "Online"])
-    .withMessage("Payment type must be either 'Cash' or 'Online'"),
 
   validatorMiddleware,
 ];
