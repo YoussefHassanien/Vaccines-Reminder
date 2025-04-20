@@ -15,3 +15,19 @@ export const createCartLimiter = rateLimit({
   },
   skipSuccessfulRequests: false, // Count all requests against the rate limit
 });
+
+/**
+ * Rate limiter for retrieving user cart details
+ * Limits to 10 user cart details retrieval requests per 1-minute window per IP
+ * Helps prevent abuse, brute force attempts, and DoS attacks
+ */
+export const retrieveUserCartDetailsLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minutes
+  max: 10, // 10 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: "Too many cart creation attempts. Please try again later.",
+  },
+  skipSuccessfulRequests: false,
+});

@@ -1,9 +1,10 @@
 import {
   addCart,
-  addCartProduct,
+  // addCartProduct,
   getUserCartDetails,
   getUserById,
   getProductById,
+  getCartProductsByCartId,
 } from "./repository.js";
 import { formatMongoDbObjects } from "../../utils/dataFormatting.js";
 
@@ -37,10 +38,7 @@ export const insertCart = async (cart, products) => {
     return {
       statusCode: 201,
       message: "Cart is successfully created",
-      data: {
-        cart: formattedCart,
-        products,
-      },
+      data: formattedCart,
     };
   } catch (error) {
     return {
@@ -51,19 +49,29 @@ export const insertCart = async (cart, products) => {
   }
 };
 
-export const fetchUserCartDetails = async (userId) => {
+export const fetchUserCartDetails = async (userId, cartId) => {
   try {
-    const userCart = await getUserCartDetails(userId);
+    const userCart = await getUserCartDetails(userId, cartId);
     if (!userCart) {
       return {
         statusCode: 404,
         message: `Could not find user cart of user id: ${userId}`,
       };
     }
+
+    const cartProducts = await getCartProductsByCartId(cartId);
+
+    if (!cartProducts) {
+      return {
+        statusCode: 404,
+        message: "Cart has no products",
+      };
+    }
+
     return {
       statusCode: 200,
       message: `User cart of user id: ${userId}, retrieved successfully`,
-      data: userCart,
+      data: { cart: userCart, products: cartProducts },
     };
   } catch (error) {
     return {
@@ -120,4 +128,4 @@ export const fetchProductById = async (productId) => {
   }
 };
 
-export const insertCartProduct = async () => {};
+// export const insertCartProduct = async () => {};

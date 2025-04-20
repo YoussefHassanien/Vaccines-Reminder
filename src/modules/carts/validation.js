@@ -1,4 +1,4 @@
-import { body, validationResult } from "express-validator";
+import { body, validationResult, param } from "express-validator";
 import mongoose from "mongoose";
 
 /**
@@ -27,6 +27,29 @@ export const createCartValidator = [
     .bail()
     .custom((value) => mongoose.Types.ObjectId.isValid(value))
     .withMessage("Invalid product ID format"),
+
+  // Validate product IDs are unique
+  body("products")
+    .custom((products) => {
+      // Skip validation if products array is missing or not an array
+      if (!Array.isArray(products)) return true;
+
+      // Create a set of product IDs to check for duplicates
+      const productIds = new Set();
+
+      // Check each product ID
+      for (const product of products) {
+        if (productIds.has(product.productId)) {
+          return false; // Duplicate found
+        }
+        productIds.add(product.productId);
+      }
+
+      return true; // All product IDs are unique
+    })
+    .withMessage(
+      "Each product in the cart must be unique. Duplicate product IDs found."
+    ),
 
   body("products.*.quantity")
     .isInt({ min: 1 })
@@ -141,6 +164,33 @@ export const createCartValidator = [
     .escape()
     .isIn(["Cash", "Online"])
     .withMessage("Payment type must be either 'Cash' or 'Online'"),
+
+  // Process validation results
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: errors.mapped(),
+      });
+    }
+    next();
+  },
+];
+
+/**
+ * Validation middleware for retrieving user cart details
+ *
+ * Validates that the cartId parameter is a valid MongoDB ObjectId
+ */
+export const retrieveUserCartDetailsValidator = [
+  // Validate cartId parameter
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .custom((value) => mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid cart ID format. Must be a valid MongoDB ObjectId"),
 
   // Process validation results
   (req, res, next) => {

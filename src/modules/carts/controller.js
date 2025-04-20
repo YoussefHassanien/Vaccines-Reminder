@@ -58,6 +58,7 @@ export const createCart = async (req, res) => {
 
 export const retreiveUserCartDetails = async (req, res) => {
   const userId = "6802e4ea61822738b4d1b340";
+  const { cartId } = req.params;
   try {
     const user = await fetchUserById(userId);
     if (user.statusCode !== 200) {
@@ -67,7 +68,8 @@ export const retreiveUserCartDetails = async (req, res) => {
       });
     }
     const { statusCode, message, data, error } = await fetchUserCartDetails(
-      userId
+      userId,
+      cartId
     );
     if (statusCode !== 200) {
       return res.status(statusCode).json({

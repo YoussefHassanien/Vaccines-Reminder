@@ -532,105 +532,21 @@ paths:
                     type: string
                     example: "Server error"
 
-  /api/carts/add-product:
-    post:
-      tags:
-        - Carts
-      summary: Add product to cart
-      description: Add a product to an existing cart
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - cartId
-                - productId
-                - quantity
-                - price
-              properties:
-                cartId:
-                  type: string
-                  format: uuid
-                  description: MongoDB ObjectId of the cart
-                  example: "60d21b4667d0d8992e610c85"
-                productId:
-                  type: string
-                  format: uuid
-                  description: MongoDB ObjectId of the product
-                  example: "60d21b4667d0d8992e610c86"
-                quantity:
-                  type: integer
-                  minimum: 1
-                  description: Quantity of the product to add
-                  example: 1
-                price:
-                  type: number
-                  format: float
-                  description: Total price for this product (quantity * unit price)
-                  example: 29.99
-      responses:
-        "200":
-          description: Product added to cart successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Product successfully added to cart"
-                  data:
-                    type: object
-                    properties:
-                      addedCartProduct:
-                        $ref: "#/components/schemas/CartProduct"
-                      cart:
-                        $ref: "#/components/schemas/Cart"
-                  error:
-                    type: object
-                    nullable: true
-        "400":
-          description: Invalid input
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Validation failed"
-        "404":
-          description: Cart or product not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Cart or product not found"
-        "500":
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error inserting cart product"
-                  error:
-                    type: string
-                    example: "Server error"
-
-  /api/carts/user-cart:
+  /api/carts/user-cart/{cartId}:
     get:
       tags:
         - Carts
-      summary: Get user's active cart
-      description: Get the most recent pending cart for the current user
+      summary: Get specific cart with products
+      description: Get details of a specific cart and its products
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "60d21b4667d0d8992e610c87"
       responses:
         "200":
           description: Cart retrieved successfully
@@ -643,12 +559,65 @@ paths:
                     type: string
                     example: "User cart of user id: 123, retrieved successfully"
                   data:
-                    $ref: "#/components/schemas/Cart"
+                    type: object
+                    properties:
+                      cart:
+                        $ref: "#/components/schemas/Cart"
+                      products:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            productId:
+                              type: string
+                              format: uuid
+                              example: "60d21b4667d0d8992e610c85"
+                            name:
+                              type: string
+                              example: "Vitamin D Supplement"
+                            image:
+                              type: string
+                              example: "https://res.cloudinary.com/example/image/upload/vitamin-d.jpg"
+                            requiredAge:
+                              type: string
+                              example: "6 months"
+                            quantity:
+                              type: integer
+                              example: 2
+                            price:
+                              type: number
+                              format: float
+                              example: 59.98
                   error:
                     type: object
                     nullable: true
+        "400":
+          description: Invalid cart ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Invalid cart ID format. Must be a valid MongoDB ObjectId"
+                          param:
+                            type: string
+                            example: "cartId"
+                          location:
+                            type: string
+                            example: "params"
         "404":
-          description: No cart found for user
+          description: Cart not found
           content:
             application/json:
               schema:
@@ -657,6 +626,16 @@ paths:
                   message:
                     type: string
                     example: "Could not find user cart of user id: 123"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cart creation attempts. Please try again later."
         "500":
           description: Server error
           content:
