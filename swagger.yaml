@@ -653,28 +653,23 @@ paths:
       security:
         - BearerAuth: []
 
-  /api/payment/send-otp:
-    post:
+  /api/payment/send-otp/{cartid}:
+    get:
       tags:
         - Payment
       summary: Send payment verification OTP
       description: >
         Sends a one-time password to the user's registered phone number for payment verification.
         OTPs are valid for 2 minutes and rate-limited to 3 requests every 5 minutes.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - cartId
-              properties:
-                cartId:
-                  type: string
-                  format: uuid
-                  description: MongoDB ObjectId of the cart to send OTP for
-                  example: "60d21b4667d0d8992e610c87"
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "60d21b4667d0d8992e610c87"
       responses:
         "201":
           description: OTP sent successfully
@@ -755,6 +750,198 @@ paths:
                   error:
                     type: string
                     example: "Failed to send SMS: Invalid phone number format"
+      security:
+        - BearerAuth: []
+
+  /api/payment/verify-otp:
+    post:
+      tags:
+        - Payment
+      summary: Verify payment OTP
+      description: >
+        Verifies the OTP provided by the user against the stored OTP for payment confirmation.
+        Rate-limited to 5 attempts every 15 minutes to prevent brute force attacks.
+        Upon successful verification, the cart status is updated based on payment type.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cartId
+                - code
+              properties:
+                cartId:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the cart
+                  example: "60d21b4667d0d8992e610c87"
+                code:
+                  type: string
+                  description: 6-digit OTP code received via WhatsApp
+                  example: "123456"
+      responses:
+        "200":
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OTP verified successfully"
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or expired OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OTP has expired"
+        "403":
+          description: Invalid OTP code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid OTP code"
+        "429":
+          description: Too many verification attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many verification attempts. Please try again after 15 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment verification failed"
+                  error:
+                    type: string
+                    example: "Database error"
+      security:
+        - BearerAuth: []
+
+  /api/payment/resend-otp/{cartId}:
+    patch:
+      tags:
+        - Payment
+      summary: Resend payment verification OTP
+      description: >
+        Regenerates and resends a payment verification OTP to the user's registered phone number.
+        Rate-limited to 2 requests every 10 minutes. Requires an existing OTP to have been sent.
+        There must be at least 30 seconds between the original OTP and resend request.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "60d21b4667d0d8992e610c87"
+      responses:
+        "201":
+          description: OTP resent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Otp is successfully sent to phone number: +201012345678"
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Baby-Guard payment verification code is: 105582. For your security, do not share this code. This OTP will expire in 2 minutes!"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "No OTP exists for this cart. Use send-otp instead."
+                          param:
+                            type: string
+                            example: "cartId"
+                          location:
+                            type: string
+                            example: "params"
+        "403":
+          description: Cart not eligible for OTP resend
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "An OTP was just sent. Please wait at least 30 seconds before requesting a resend."
+        "429":
+          description: Too many OTP resend requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many resend attempts. Please try again after 10 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating payment otp"
+                  error:
+                    type: string
+                    example: "Database connection error"
       security:
         - BearerAuth: []
 

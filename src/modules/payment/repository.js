@@ -53,7 +53,7 @@ export const getPaymentOtpByCartId = async (cartId) => {
 
 export const updateUserCartStatus = async (userId, cartId) => {
   try {
-    const userCart = await Cart.findOne({ userId, cartId });
+    const userCart = await Cart.findOne({ userId, _id: cartId });
     if (!userCart) {
       console.error(
         `User cart of user id: ${userId} and cart id: ${cartId} not found!`
@@ -77,6 +77,33 @@ export const updateUserCartStatus = async (userId, cartId) => {
       `Error updating user cart of user id: ${userId} and cart id: ${cartId}`,
       error
     );
+    throw error;
+  }
+};
+
+/**
+ * Updates the OTP code for a specific cart
+ *
+ * @param {string} cartId - ID of the cart
+ * @param {string} code - New OTP code
+ * @returns {Object|boolean} Updated payment OTP object or false if not found
+ */
+export const updatePaymentOtpCode = async (cartId, code) => {
+  try {
+    const paymentOtp = await PaymentOtp.findOne({ cartId });
+
+    if (!paymentOtp) {
+      console.error(`No payment OTP found for cart ID: ${cartId}`);
+      return false;
+    }
+
+    paymentOtp.code = code;
+    paymentOtp.save();
+
+    // If you use the formatMongoDbObjects utility for other functions
+    return formatMongoDbObjects(paymentOtp);
+  } catch (error) {
+    console.error(`Error updating payment OTP for cart ID: ${cartId}`, error);
     throw error;
   }
 };

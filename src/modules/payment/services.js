@@ -4,6 +4,7 @@ import {
   getPaymentOtpByCartId,
   deletePaymentOtp,
   updateUserCartStatus,
+  updatePaymentOtpCode,
 } from "./repository.js";
 
 /**
@@ -61,7 +62,7 @@ export const verifyOtp = async (cartId, userProvidedCode) => {
     }
 
     // Check if OTP is expired (3 minutes)
-    const threeMinutesAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
     const isExpired = otpRecord.updatedAt < threeMinutesAgo;
 
     if (isExpired) {
@@ -72,7 +73,7 @@ export const verifyOtp = async (cartId, userProvidedCode) => {
     }
 
     // Check if OTP matches
-    const isValid = otpRecord.compareCodes(userProvidedCode);
+    const isValid = await otpRecord.compareCodes(userProvidedCode);
 
     if (!isValid) {
       return {
@@ -84,10 +85,14 @@ export const verifyOtp = async (cartId, userProvidedCode) => {
     return {
       status: 200,
       message: "OTP verified successfully",
+      data: {
+        otp: otpRecord,
+      },
     };
   } catch (error) {
     console.error("OTP verification failed:", error);
     return {
+      status: 500,
       message: "Payment OTP verification failed",
       error: error.message,
     };
@@ -102,10 +107,8 @@ export const removePaymentOtp = async (id) => {
     }
     return true;
   } catch (error) {
-    return {
-      message: "Error deleting payment otp",
-      error: error.message,
-    };
+    console.error("Error deleting payment otp", error);
+    return false;
   }
 };
 
@@ -117,24 +120,36 @@ export const insertPaymentOtp = async (paymentOtpData) => {
     }
     return true;
   } catch (error) {
-    return {
-      message: "Error inserting payment otp",
-      error: error.message,
-    };
+    console.error("Error inserting payment otp", error);
+    return false;
   }
 };
 
 export const changeUserCartStatus = async (userId, cartId) => {
   try {
     const userCart = await updateUserCartStatus(userId, cartId);
-    if (!userCart) {
+    return userCart;
+  } catch (error) {
+    console.error(
+      `Error updating user cart status of user id: ${userId} and cart id: ${cartId}`,
+      error
+    );
+    return false;
+  }
+};
+
+export const changePaymentOtpCode = async (cartId, code) => {
+  try {
+    const paymentOtp = await updatePaymentOtpCode(cartId, code);
+    if (!paymentOtp) {
       return false;
     }
     return true;
   } catch (error) {
-    return {
-      message: `Error updating user cart status of user id: ${userId} and cart id: ${cartId}`,
-      error: error.message,
-    };
+    console.error(
+      `Error updating cart payment otp of cart id: ${cartId}`,
+      error
+    );
+    return false;
   }
 };
