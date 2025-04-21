@@ -47,3 +47,19 @@ export const verifyOtpLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: false, // Don't skip counts for successful requests
 });
+
+/**
+ * Rate limiter for payment cancellation
+ * Limits requests to 5 per 15 minutes per IP address
+ */
+export const cancelPaymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: {
+    message:
+      "Too many cancellation attempts. Please try again after 15 minutes.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+});

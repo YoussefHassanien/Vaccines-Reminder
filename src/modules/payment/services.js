@@ -5,6 +5,7 @@ import {
   deletePaymentOtp,
   updateUserCartStatus,
   updatePaymentOtpCode,
+  deleteCartAndProducts,
 } from "./repository.js";
 
 /**
@@ -151,5 +152,51 @@ export const changePaymentOtpCode = async (cartId, code) => {
       error
     );
     return false;
+  }
+};
+
+/**
+ * Cancels a payment by deleting the cart and associated products
+ *
+ * @param {string} userId - ID of the user
+ * @param {string} cartId - ID of the cart to cancel
+ * @returns {Promise<Object>} Result object with status and message
+ */
+export const removeCartAndProducts = async (userId, cartId) => {
+  try {
+    const deletedCart = await deleteCartAndProducts(cartId, userId);
+
+    if (!deletedCart) {
+      return {
+        status: 400,
+        message: "Cart not found or cannot be cancelled",
+      };
+    }
+
+    // Also check if there's an OTP for this cart and delete it
+    try {
+      const paymentOtp = await getPaymentOtpByCartId(cartId);
+      if (paymentOtp) {
+        await deletePaymentOtp(paymentOtp._id);
+      }
+    } catch (err) {
+      // We don't need to fail the whole operation if OTP deletion fails
+      console.warn(`Failed to delete OTP for cart ${cartId}:`, err);
+    }
+
+    return {
+      status: 200,
+      message: "Payment cancelled successfully",
+      data: {
+        deletedCart,
+      },
+    };
+  } catch (error) {
+    console.error("Error cancelling payment:", error);
+    return {
+      status: 500,
+      message: "Failed to cancel payment",
+      error: error.message,
+    };
   }
 };

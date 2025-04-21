@@ -6,6 +6,7 @@ import {
   insertPaymentOtp,
   changeUserCartStatus,
   changePaymentOtpCode,
+  removeCartAndProducts,
 } from "./services.js";
 
 export const sendPaymentOtp = async (req, res) => {
@@ -99,6 +100,33 @@ export const resendPaymentOtp = async (req, res) => {
     return res.status(500).json({
       message: error.message,
       error: error.error,
+    });
+  }
+};
+
+/**
+ * Cancels a payment by deleting the associated cart and products
+ */
+export const cancelPayment = async (req, res) => {
+  const user = req.user;
+  const userId = user._id;
+  const { cartId } = req.params;
+
+  try {
+    const { status, message, data, error } = await removeCartAndProducts(
+      userId,
+      cartId
+    );
+
+    return res.status(status).json({
+      message,
+      ...(data && { data }),
+      ...(error && { error }),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error cancelling payment",
+      error: error.message,
     });
   }
 };

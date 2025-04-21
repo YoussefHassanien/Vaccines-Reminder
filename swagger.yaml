@@ -945,6 +945,76 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/payment/cancel/{cartId}:
+    delete:
+      tags:
+        - Payment
+      summary: Cancel payment and delete cart
+      description: >
+        Cancels a pending payment by deleting the cart and all associated products.
+        This can only be done for carts with "Pending" status.
+        Rate-limited to 5 requests every 15 minutes.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart to cancel
+          example: "60d21b4667d0d8992e610c87"
+      responses:
+        "200":
+          description: Payment cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment cancelled successfully"
+                  data:
+                    type: object
+                    properties:
+                      deletedCart:
+                        $ref: "#/components/schemas/Cart"
+        "400":
+          description: Invalid input or cart cannot be cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot cancel a cart with status: Confirmed"
+        "429":
+          description: Too many cancellation attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cancellation attempts. Please try again after 15 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to cancel payment"
+                  error:
+                    type: string
+                    example: "Database connection error"
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Product:

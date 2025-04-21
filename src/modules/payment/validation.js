@@ -155,3 +155,42 @@ export const resendPaymentOtpValidator = [
 
   validatorMiddleware,
 ];
+
+/**
+ * Validation middleware for cancelling payment
+ */
+export const cancelPaymentValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .custom((value) => mongoose.Types.ObjectId.isValid(value))
+    .withMessage("Invalid cart ID format. Must be a valid MongoDB ObjectId")
+    .bail()
+    .escape()
+    .custom(async (value, { req }) => {
+      try {
+        // Verify the cart exists and belongs to the authenticated user
+        const cart = await Cart.findOne({
+          _id: value,
+          userId: req.user._id,
+        });
+
+        if (!cart) {
+          throw new Error("Cart not found or does not belong to you");
+        }
+
+        // Verify cart status is Pending (can only cancel pending carts)
+        if (cart.status !== "Pending") {
+          throw new Error(`Cannot cancel a cart with status: ${cart.status}`);
+        }
+
+        return true;
+      } catch (err) {
+        if (err.message) throw new Error(err.message);
+        throw new Error("Error validating request");
+      }
+    }),
+
+  validatorMiddleware,
+];

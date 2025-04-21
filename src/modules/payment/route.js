@@ -3,16 +3,19 @@ import {
   sendPaymentOtp,
   verifyPaymentOtp,
   resendPaymentOtp,
+  cancelPayment,
 } from "./controller.js";
 import {
   sendPaymentOtpValidator,
   verifyPaymentOtpValidator,
   resendPaymentOtpValidator,
+  cancelPaymentValidator,
 } from "./validation.js";
 import {
   sendOtpLimiter,
   verifyOtpLimiter,
   resendOtpLimiter,
+  cancelPaymentLimiter,
 } from "./rateLimiter.js";
 import { isAuthenticated } from "../../middlewares/authentication.js";
 
@@ -40,6 +43,14 @@ paymentRouter.patch(
   isAuthenticated,
   resendPaymentOtpValidator,
   resendPaymentOtp
+);
+
+paymentRouter.delete(
+  "/cancel/:cartId",
+  cancelPaymentLimiter,
+  isAuthenticated,
+  cancelPaymentValidator,
+  cancelPayment
 );
 
 export default paymentRouter;
