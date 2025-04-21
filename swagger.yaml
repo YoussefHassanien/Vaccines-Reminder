@@ -653,6 +653,111 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/payment/send-otp:
+    post:
+      tags:
+        - Payment
+      summary: Send payment verification OTP
+      description: >
+        Sends a one-time password to the user's registered phone number for payment verification.
+        OTPs are valid for 2 minutes and rate-limited to 3 requests every 5 minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cartId
+              properties:
+                cartId:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the cart to send OTP for
+                  example: "60d21b4667d0d8992e610c87"
+      responses:
+        "201":
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Otp is successfully sent to phone number: +201012345678"
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Baby-Guard payment verification code is: 105582. For your security, do not share this code. This OTP will expire in 2 minutes!"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cart not found or does not belong to you"
+                          param:
+                            type: string
+                            example: "cartId"
+                          location:
+                            type: string
+                            example: "body"
+        "403":
+          description: Cart not eligible for OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot send OTP for cart with status: Confirmed"
+                  errors:
+                    type: object
+        "429":
+          description: Too many OTP requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many OTP requests. Please try again after 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error sending otp"
+                  error:
+                    type: string
+                    example: "Failed to send SMS: Invalid phone number format"
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Product:
@@ -763,6 +868,35 @@ components:
           type: number
           format: float
           example: 59.98
+    PaymentOtp:
+      type: object
+      description: >
+        Represents a one-time password for payment verification.
+        OTPs are valid for 2 minutes and are tied to a specific cart.
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c89"
+        cartId:
+          type: string
+          format: uuid
+          description: Reference to the cart this OTP is for
+          example: "60d21b4667d0d8992e610c87"
+        code:
+          type: string
+          description: Hashed 6-digit OTP code
+          example: "$2b$10$X9mT4vUeC0ZVK5hHGUvCIeQGiUpkXZRqBAY7y7Ly42X9XCYV9DJ2K"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the OTP was created
+          example: "2023-04-21T12:34:56.789Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the OTP was last updated
+          example: "2023-04-21T12:34:56.789Z"
   securitySchemes:
     BearerAuth:
       type: http
