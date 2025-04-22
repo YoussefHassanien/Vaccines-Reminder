@@ -3,6 +3,7 @@ import {
   addNewChild,
   deleteChild,
   retrievePaginatedChildren,
+  retriveCurrentUserChildren,
 } from "./controller.js";
 import multerUploadHandler from "../../../config/multer.js";
 import multerErrorHandler from "../../middlewares/multerErrorHandler.js";
@@ -26,7 +27,7 @@ childRouter.post(
   addNewChild
 );
 childRouter.get("/", isAuthenticated, isAuthorized, retrievePaginatedChildren);
-childRouter.get("/me", isAuthenticated, retrievePaginatedChildren);
+childRouter.get("/me", isAuthenticated, retriveCurrentUserChildren);
 childRouter.delete("/:id", isAuthenticated, deleteChild);
 
 export default childRouter;

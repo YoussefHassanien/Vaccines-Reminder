@@ -3,6 +3,7 @@ import {
   addNewChild,
   getPaginatedChildren,
   deleteChild,
+  getChildrenByUserId,
 } from "./repository.js";
 import { Readable } from "stream";
 import path from "path";
@@ -84,6 +85,26 @@ export const fetchPaginatedChildrenService = async (cursor, limit) => {
       return {
         status: 500,
         message: "Error getting all children",
+      };
+    }
+    return {
+      status: 200,
+      message: "Children are successfully retrieved",
+      data: children,
+    };
+  } catch (error) {
+    console.error("Error fetching paginated children:", error);
+    throw error;
+  }
+};
+
+export const getChildrenByUser = async (userId) => {
+  try {
+    const children = await getChildrenByUserId(userId);
+    if (!children) {
+      return {
+        status: 500,
+        message: "current user has no children",
       };
     }
     return {

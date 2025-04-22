@@ -4,6 +4,7 @@ import {
   deleteChildService,
   uploadToCloudinary,
   getImageCloudinaryUrl,
+  getChildrenByUser,
 } from "./services.js";
 
 export const addNewChild = async (req, res, next) => {
@@ -53,6 +54,17 @@ export const retrievePaginatedChildren = async (req, res) => {
     const nextCursor = data.length > 0 ? data[data.length - 1]._id : null;
 
     return res.status(status).json({ message, data, error, nextCursor });
+  } catch (error) {
+    return res.status(500).json({ message: error.message, error: error.error });
+  }
+};
+
+export const retriveCurrentUserChildren = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { status, message, data, error } = await getChildrenByUser(userId);
+
+    return res.status(status).json({ message, data, error });
   } catch (error) {
     return res.status(500).json({ message: error.message, error: error.error });
   }

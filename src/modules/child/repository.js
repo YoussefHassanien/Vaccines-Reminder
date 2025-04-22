@@ -54,6 +54,27 @@ export const getPaginatedChildren = async (cursor, limit) => {
 };
 
 /**
+ * get all children by user ID
+ * @param {string} id - user ID
+ * @returns {Promise<Object>} user children
+ */
+
+export const getChildrenByUserId = async (id) => {
+  try {
+    const children = await Child.find({ userId: id });
+
+    if (!children) {
+      throw new Error("no children not found");
+    }
+
+    return children;
+  } catch (error) {
+    console.error(`Error deleting child with ID ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
  * Delete a Child by ID
  * @param {string} id - Child ID
  * @returns {Promise<Object>} Deleted Child document
