@@ -11,6 +11,7 @@ import productsRouter from "./src/modules/products/route.js";
 import authRouter from "./src/modules/authentication/route.js";
 import cartsRouter from "./src/modules/carts/route.js";
 import paymentRouter from "./src/modules/payment/route.js";
+import providerRoute from "./src/modules/providers/route.js";
 
 const app = express();
 
@@ -41,5 +42,6 @@ app.use("/api/products", productsRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/carts", cartsRouter);
 app.use("/api/payment", paymentRouter);
+app.use("/api/provider", providerRoute);
 
 export default app;
