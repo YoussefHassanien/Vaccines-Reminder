@@ -1,17 +1,12 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
-const cartProductSchema = new mongoose.Schema(
+const paymentOtpSchema = new mongoose.Schema(
   {
     cartId: {
       type: mongoose.Schema.ObjectId,
       ref: "Cart",
       required: [true, "Cart id is required"],
-      index: true,
-    },
-    userId: {
-      type: mongoose.Schema.ObjectId,
-      ref: "User",
-      required: [true, "Product id is required"],
       index: true,
     },
     code: {
@@ -31,5 +26,19 @@ const cartProductSchema = new mongoose.Schema(
   }
 );
 
-const CartProduct = mongoose.model("Cart", cartProductSchema);
-export default CartProduct;
+paymentOtpSchema.pre("save", function (next) {
+  if (!this.isModified("code")) return next();
+  try {
+    this.code = bcrypt.hashSync(this.code, 12);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
+paymentOtpSchema.methods.compareCodes = async function (code) {
+  return await bcrypt.compare(code, this.code);
+};
+
+const PaymentOtp = mongoose.model("Payment-Otp", paymentOtpSchema);
+export default PaymentOtp;
