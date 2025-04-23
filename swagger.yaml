@@ -1015,6 +1015,276 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: >
+        Creates a new user account with the provided information.
+        Rate-limited to 5 requests per 10 minutes per IP address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fName
+                - lName
+                - email
+                - nationalIdNumer
+                - birthDate
+                - password
+                - passwordConfirm
+                - phoneNumber
+                - governorate
+                - street
+                - city
+                - buildingNumber
+                - apartmentNumber
+                - gender
+              properties:
+                fName:
+                  type: string
+                  description: First name (3-15 characters)
+                  example: "Ahmed"
+                lName:
+                  type: string
+                  description: Last name (3-15 characters)
+                  example: "Mohamed"
+                email:
+                  type: string
+                  format: email
+                  description: Email address (must be unique)
+                  example: "ahmed@example.com"
+                nationalIdNumer:
+                  type: string
+                  description: National ID number (exactly 14 digits, must be unique)
+                  example: "29912151234567"
+                birthDate:
+                  type: string
+                  format: date
+                  description: Date of birth
+                  example: "1999-12-15"
+                password:
+                  type: string
+                  format: password
+                  description: Password (minimum 6 characters)
+                  example: "securePassword123"
+                passwordConfirm:
+                  type: string
+                  format: password
+                  description: Confirm password (must match password)
+                  example: "securePassword123"
+                phoneNumber:
+                  type: string
+                  description: Phone number (Egyptian or Saudi Arabian format)
+                  example: "+201012345678"
+                governorate:
+                  type: string
+                  description: Governorate/province
+                  example: "Cairo"
+                city:
+                  type: string
+                  description: City
+                  example: "Heliopolis"
+                street:
+                  type: string
+                  description: Street address
+                  example: "123 Main Street"
+                buildingNumber:
+                  type: integer
+                  description: Building number
+                  example: 42
+                apartmentNumber:
+                  type: integer
+                  description: Apartment number
+                  example: 5
+                gender:
+                  type: string
+                  enum: ["male", "female"]
+                  description: Gender
+                  example: "male"
+                profileImg:
+                  type: string
+                  format: binary
+                  description: Profile image (optional)
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  token:
+                    type: string
+                    description: JWT authentication token
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  role:
+                    type: string
+                    example: "parent"
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      email:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Email already in use"
+                          param:
+                            type: string
+                            example: "email"
+                          location:
+                            type: string
+                            example: "body"
+        "429":
+          description: Too many registration attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many signup attempts. Please try again in 10 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error creating user"
+                  error:
+                    type: string
+                    example: "Internal server error"
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: >
+        Authenticates a user and returns a JWT token.
+        Rate-limited to 10 requests per 5 minutes per IP address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address
+                  example: "ahmed@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: Password
+                  example: "securePassword123"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  token:
+                    type: string
+                    description: JWT authentication token
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  role:
+                    type: string
+                    example: "parent"
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      email:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Email not found"
+                          param:
+                            type: string
+                            example: "email"
+                          location:
+                            type: string
+                            example: "body"
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Invalid email or password"
+        "429":
+          description: Too many login attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many login attempts. Please try again in 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error during authentication"
+                  error:
+                    type: string
+                    example: "Internal server error"
+
 components:
   schemas:
     Product:
@@ -1154,6 +1424,55 @@ components:
           format: date-time
           description: When the OTP was last updated
           example: "2023-04-21T12:34:56.789Z"
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c84"
+        fName:
+          type: string
+          example: "Ahmed"
+        lName:
+          type: string
+          example: "Mohamed"
+        email:
+          type: string
+          format: email
+          example: "ahmed@example.com"
+        nationalIdNumer:
+          type: string
+          example: "29912151234567"
+        phoneNumber:
+          type: string
+          example: "+201012345678"
+        governorate:
+          type: string
+          example: "Cairo"
+        city:
+          type: string
+          example: "Heliopolis"
+        street:
+          type: string
+          example: "123 Main Street"
+        buildingNumber:
+          type: integer
+          example: 42
+        apartmentNumber:
+          type: integer
+          example: 5
+        gender:
+          type: string
+          enum: ["male", "female"]
+          example: "male"
+        role:
+          type: string
+          enum: ["parent", "admin"]
+          example: "parent"
+        profileImg:
+          type: string
+          example: "https://res.cloudinary.com/your-cloud/image/upload/profile.jpg"
   securitySchemes:
     BearerAuth:
       type: http
