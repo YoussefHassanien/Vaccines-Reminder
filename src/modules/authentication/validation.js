@@ -69,7 +69,7 @@ export const signupValidator = [
       return true;
     }),
 
-  check("passwordComfirm")
+  check("passwordConfirm")
     .notEmpty()
     .withMessage("Confirm password is required"),
 
@@ -90,7 +90,7 @@ export const signupValidator = [
   check("buildingNumber")
     .notEmpty()
     .withMessage("buildingNumber must have a value"),
-  check("appartmentNumber")
+  check("apartmentNumber")
     .notEmpty()
     .withMessage("appartmentNumber must have a value"),
   check("gender")
