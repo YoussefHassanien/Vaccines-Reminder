@@ -72,7 +72,7 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Address building number must be provided"],
     },
-    apartmentNumber: {
+    appartmentNumber: {
       type: Number,
       required: [true, "Address appartment number must be provided"],
     },

@@ -9,8 +9,11 @@ import YAML from "yamljs";
 
 import productsRouter from "./src/modules/products/route.js";
 import authRouter from "./src/modules/authentication/route.js";
+import userRouter from "./src/modules/user/route.js";
+import childRouter from "./src/modules/child/route.js";
 import cartsRouter from "./src/modules/carts/route.js";
 import paymentRouter from "./src/modules/payment/route.js";
+
 
 const app = express();
 
@@ -39,6 +42,8 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use("/api/products", productsRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter);
+app.use("/api/child", childRouter);
 app.use("/api/carts", cartsRouter);
 app.use("/api/payment", paymentRouter);
 
