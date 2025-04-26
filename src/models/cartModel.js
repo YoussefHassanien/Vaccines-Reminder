@@ -12,7 +12,7 @@ const cartSchema = new mongoose.Schema(
     productsCount: {
       type: Number,
       required: [true, "Cart products count must be provided"],
-      min: [1, "Cart must have at least one product"],
+      default: 0,
       validate: {
         validator: Number.isInteger,
         message: "Products count must be an integer",
@@ -21,7 +21,7 @@ const cartSchema = new mongoose.Schema(
     totalPrice: {
       type: Number,
       required: [true, "Total price of the cart must be provided"],
-      min: [1, "Price must be a postive number"],
+      default: 0,
     },
     status: {
       type: String,
