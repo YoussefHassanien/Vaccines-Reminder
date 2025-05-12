@@ -14,7 +14,7 @@ import childRouter from "./src/modules/child/route.js";
 import cartsRouter from "./src/modules/carts/route.js";
 import paymentRouter from "./src/modules/payment/route.js";
 import providerRoute from "./src/modules/providers/route.js";
-
+import vaccinesRouter from "./src/modules/vaccines/route.js";
 
 const app = express();
 
@@ -48,5 +48,6 @@ app.use("/api/child", childRouter);
 app.use("/api/carts", cartsRouter);
 app.use("/api/payment", paymentRouter);
 app.use("/api/provider", providerRoute);
+app.use("/api/vaccines", vaccinesRouter);
 
 export default app;
