@@ -1579,6 +1579,368 @@ paths:
                     type: string
                     example: "Internal server error"
 
+  /api/vaccines/admin/add:
+    post:
+      tags:
+        - Vaccines
+      summary: Create new vaccine
+      description: Add a new vaccine to the system (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - requiredAge
+                - price
+                - provider
+              properties:
+                name:
+                  type: string
+                  description: Vaccine name (2-100 characters)
+                  example: "Polio Vaccine"
+                description:
+                  type: string
+                  description: Vaccine description (20-1000 characters)
+                  example: "Protects against poliomyelitis, a highly infectious viral disease that affects the nervous system and can cause permanent paralysis."
+                requiredAge:
+                  type: string
+                  description: Age at which vaccine is required
+                  enum:
+                    - "No specific age required"
+                    - "3 months"
+                    - "6 months"
+                    - "9 months"
+                    - "1 year"
+                    - "1 year and 3 months"
+                    - "1 year and 6 months"
+                    - "1 year and 9 months"
+                    - "2 years"
+                    - "2 years and 3 months"
+                    - "2 years and 6 months"
+                    - "2 years and 9 months"
+                    - "3 years"
+                    - "3 years and 3 months"
+                    - "3 years and 6 months"
+                    - "3 years and 9 months"
+                    - "4 years"
+                  example: "6 months"
+                price:
+                  type: number
+                  format: float
+                  description: Vaccine price (non-negative number)
+                  example: 49.99
+                provider:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the vaccine provider
+                  example: "60d21b4667d0d8992e610c85"
+      responses:
+        "201":
+          description: Vaccine created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine is successfully created"
+                  data:
+                    $ref: "#/components/schemas/Vaccine"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      name:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Name must be between 2 and 100 characters"
+                      requiredAge:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "'5 years' is not a valid age requirement. Please choose from the predefined age options."
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many vaccine creation attempts. Please try again after an hour."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error inserting vaccine"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/vaccines:
+    get:
+      tags:
+        - Vaccines
+      summary: Get all vaccines
+      description: Retrieve all available vaccines for parents
+      responses:
+        "200":
+          description: Vaccines retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccines retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Vaccine"
+                  error:
+                    type: object
+                    nullable: true
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: No vaccines found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No vaccines found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many vaccine retrieval attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching vaccines"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/provider/admin/add:
+    post:
+      tags:
+        - Providers
+      summary: Create new provider
+      description: Add a new vaccine provider to the system (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phone
+                - city
+                - governorate
+                - district
+                - workHours
+              properties:
+                name:
+                  type: string
+                  description: Provider name (2-100 characters)
+                  example: "Health Ministry"
+                phone:
+                  type: string
+                  description: Provider phone number (must be unique and valid EG/SA format)
+                  example: "+201012345678"
+                city:
+                  type: string
+                  description: Provider city
+                  example: "Cairo"
+                governorate:
+                  type: string
+                  description: Provider governorate
+                  example: "Cairo"
+                district:
+                  type: string
+                  description: Provider district
+                  example: "Nasr City"
+                workHours:
+                  type: string
+                  description: Provider working hours (2-20 characters)
+                  example: "9 AM to 5 PM"
+      responses:
+        "201":
+          description: Provider created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "provider is successfully created"
+                  data:
+                    $ref: "#/components/schemas/Provider"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      name:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Provider name must be at least 2 characters"
+                      phone:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Invalid phone number, only accept EG and SA phone numbers"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many adding new providers attempts, Try again after 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error inserting provider"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Product:
@@ -1767,6 +2129,56 @@ components:
         profileImg:
           type: string
           example: "https://res.cloudinary.com/your-cloud/image/upload/profile.jpg"
+    Vaccine:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c86"
+        name:
+          type: string
+          example: "Polio Vaccine"
+        price:
+          type: number
+          format: float
+          example: 49.99
+        description:
+          type: string
+          example: "Protects against poliomyelitis, a highly infectious viral disease that affects the nervous system and can cause permanent paralysis."
+        requiredAge:
+          type: string
+          example: "6 months"
+        provider:
+          type: string
+          format: uuid
+          description: "Reference to provider"
+          example: "60d21b4667d0d8992e610c85"
+    Provider:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c85"
+        name:
+          type: string
+          example: "Health Ministry"
+        phone:
+          type: string
+          example: "+201012345678"
+        city:
+          type: string
+          example: "Cairo"
+        governorate:
+          type: string
+          example: "Cairo"
+        district:
+          type: string
+          example: "Nasr City"
+        workHours:
+          type: string
+          example: "9 AM to 5 PM"
   securitySchemes:
     BearerAuth:
       type: http
