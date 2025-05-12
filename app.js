@@ -13,6 +13,7 @@ import userRouter from "./src/modules/user/route.js";
 import childRouter from "./src/modules/child/route.js";
 import cartsRouter from "./src/modules/carts/route.js";
 import paymentRouter from "./src/modules/payment/route.js";
+import providerRoute from "./src/modules/providers/route.js";
 
 
 const app = express();
@@ -46,5 +47,6 @@ app.use("/api/user", userRouter);
 app.use("/api/child", childRouter);
 app.use("/api/carts", cartsRouter);
 app.use("/api/payment", paymentRouter);
+app.use("/api/provider", providerRoute);
 
 export default app;
