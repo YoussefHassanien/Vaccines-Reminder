@@ -374,24 +374,10 @@ paths:
               type: object
               required:
                 - cart
-                - products
               properties:
                 cart:
                   type: object
-                  required:
-                    - productsCount
-                    - totalPrice
-                    - paymentType
                   properties:
-                    productsCount:
-                      type: integer
-                      description: Total count of products in the cart
-                      example: 5
-                    totalPrice:
-                      type: number
-                      format: float
-                      description: Total price of the cart
-                      example: 341.5
                     governorate:
                       type: string
                       description: "Delivery address governorate (4-30 characters, required only for Cash payments)"
@@ -418,38 +404,6 @@ paths:
                       default: "Online"
                       description: "Payment method (Online payments use user's registered address automatically)"
                       example: "Cash"
-                products:
-                  type: array
-                  description: Array of products to add to the cart
-                  items:
-                    type: object
-                    required:
-                      - productId
-                      - quantity
-                      - price
-                    properties:
-                      productId:
-                        type: string
-                        format: uuid
-                        description: MongoDB ObjectId of the product
-                        example: "6802bcef489dbe50c70aad5b"
-                      quantity:
-                        type: integer
-                        minimum: 1
-                        description: Quantity of this product
-                        example: 3
-                      price:
-                        type: number
-                        format: float
-                        description: Total price for this product (quantity * unit price)
-                        example: 181.5
-                  example:
-                    - productId: "6802bcef489dbe50c70aad5b"
-                      quantity: 3
-                      price: 181.5
-                    - productId: "6803e59f5cfbd3f8d54aaec9"
-                      quantity: 2
-                      price: 160
       responses:
         "201":
           description: Cart created successfully
@@ -533,7 +487,7 @@ paths:
       security:
         - BearerAuth: []
 
-  /api/carts/user-cart/{cartId}:
+  /api/carts/{cartId}:
     get:
       tags:
         - Carts
@@ -558,7 +512,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "User cart of user id: 123, retrieved successfully"
+                    example: "Cart retrieved successfully"
                   data:
                     type: object
                     properties:
@@ -626,7 +580,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Could not find user cart of user id: 123"
+                    example: "Cart not found or does not belong to you"
         "429":
           description: Too many requests
           content:
@@ -636,7 +590,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Too many cart creation attempts. Please try again later."
+                    example: "Too many cart retrieval attempts. Please try again after a minute."
         "500":
           description: Server error
           content:
@@ -646,7 +600,347 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error finding user cart"
+                    example: "Error finding cart"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/{cartId}/products:
+    post:
+      tags:
+        - Carts
+      summary: Add product to cart
+      description: Add a product to an existing cart
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "680cde050f7a995dadea207a"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+                - quantity
+              properties:
+                productId:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the product to add
+                  example: "6803e59f5cfbd3f8d54aaec9"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: Quantity of the product
+                  example: 2
+      responses:
+        "201":
+          description: Product successfully added to cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product is successfully added to cart"
+                  data:
+                    $ref: "#/components/schemas/CartProduct"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed. Please check your input."
+        "404":
+          description: Cart or product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product with ID 6803e59f5cfbd3f8d54aaec9 not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many product addition attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error adding product to cart"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/{cartId}/products/{productId}:
+    delete:
+      tags:
+        - Carts
+      summary: Remove product from cart
+      description: Remove a specific product from a cart
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "680cde050f7a995dadea207a"
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the product to remove
+          example: "6803e59f5cfbd3f8d54aaec9"
+      responses:
+        "200":
+          description: Product successfully removed from cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product removed from cart successfully"
+                  data:
+                    $ref: "#/components/schemas/CartProduct"
+                  error:
+                    type: object
+                    nullable: true
+        "404":
+          description: Cart, product, or cart product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product not found in this cart"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many product removal attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error removing product from cart"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+    patch:
+      tags:
+        - Carts
+      summary: Update product quantity in cart
+      description: Update the quantity of a product in a cart
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "680cde050f7a995dadea207a"
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the product
+          example: "6803e59f5cfbd3f8d54aaec9"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: New quantity for the product
+                  example: 3
+      responses:
+        "200":
+          description: Product quantity updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart product quantity updated successfully"
+                  data:
+                    $ref: "#/components/schemas/CartProduct"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid quantity or insufficient inventory
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Insufficient inventory. Only 5 additional units available."
+        "404":
+          description: Cart, product, or cart product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product not found in this cart"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many quantity update attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating product quantity"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/{cartId}:
+    delete:
+      tags:
+        - Carts
+      summary: Delete cart
+      description: Delete an entire cart and return its products to inventory
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "680cde050f7a995dadea207a"
+      responses:
+        "200":
+          description: Cart deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart deleted successfully"
+                  data:
+                    type: object
+                    properties:
+                      deletedCart:
+                        $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Cart not found or invalid status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot delete cart with status: Confirmed"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cart deletion attempts. Please try again after an hour."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting cart"
                   error:
                     type: string
                     example: "Server error"
@@ -1015,6 +1309,276 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: >
+        Creates a new user account with the provided information.
+        Rate-limited to 5 requests per 10 minutes per IP address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fName
+                - lName
+                - email
+                - nationalIdNumer
+                - birthDate
+                - password
+                - passwordConfirm
+                - phoneNumber
+                - governorate
+                - street
+                - city
+                - buildingNumber
+                - apartmentNumber
+                - gender
+              properties:
+                fName:
+                  type: string
+                  description: First name (3-15 characters)
+                  example: "Ahmed"
+                lName:
+                  type: string
+                  description: Last name (3-15 characters)
+                  example: "Mohamed"
+                email:
+                  type: string
+                  format: email
+                  description: Email address (must be unique)
+                  example: "ahmed@example.com"
+                nationalIdNumer:
+                  type: string
+                  description: National ID number (exactly 14 digits, must be unique)
+                  example: "29912151234567"
+                birthDate:
+                  type: string
+                  format: date
+                  description: Date of birth
+                  example: "1999-12-15"
+                password:
+                  type: string
+                  format: password
+                  description: Password (minimum 6 characters)
+                  example: "securePassword123"
+                passwordConfirm:
+                  type: string
+                  format: password
+                  description: Confirm password (must match password)
+                  example: "securePassword123"
+                phoneNumber:
+                  type: string
+                  description: Phone number (Egyptian or Saudi Arabian format)
+                  example: "+201012345678"
+                governorate:
+                  type: string
+                  description: Governorate/province
+                  example: "Cairo"
+                city:
+                  type: string
+                  description: City
+                  example: "Heliopolis"
+                street:
+                  type: string
+                  description: Street address
+                  example: "123 Main Street"
+                buildingNumber:
+                  type: integer
+                  description: Building number
+                  example: 42
+                apartmentNumber:
+                  type: integer
+                  description: Apartment number
+                  example: 5
+                gender:
+                  type: string
+                  enum: ["male", "female"]
+                  description: Gender
+                  example: "male"
+                profileImg:
+                  type: string
+                  format: binary
+                  description: Profile image (optional)
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  token:
+                    type: string
+                    description: JWT authentication token
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  role:
+                    type: string
+                    example: "parent"
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      email:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Email already in use"
+                          param:
+                            type: string
+                            example: "email"
+                          location:
+                            type: string
+                            example: "body"
+        "429":
+          description: Too many registration attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many signup attempts. Please try again in 10 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error creating user"
+                  error:
+                    type: string
+                    example: "Internal server error"
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: >
+        Authenticates a user and returns a JWT token.
+        Rate-limited to 10 requests per 5 minutes per IP address.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address
+                  example: "ahmed@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: Password
+                  example: "securePassword123"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  token:
+                    type: string
+                    description: JWT authentication token
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  role:
+                    type: string
+                    example: "parent"
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      email:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Email not found"
+                          param:
+                            type: string
+                            example: "email"
+                          location:
+                            type: string
+                            example: "body"
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Invalid email or password"
+        "429":
+          description: Too many login attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many login attempts. Please try again in 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error during authentication"
+                  error:
+                    type: string
+                    example: "Internal server error"
+
 components:
   schemas:
     Product:
@@ -1154,6 +1718,55 @@ components:
           format: date-time
           description: When the OTP was last updated
           example: "2023-04-21T12:34:56.789Z"
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c84"
+        fName:
+          type: string
+          example: "Ahmed"
+        lName:
+          type: string
+          example: "Mohamed"
+        email:
+          type: string
+          format: email
+          example: "ahmed@example.com"
+        nationalIdNumer:
+          type: string
+          example: "29912151234567"
+        phoneNumber:
+          type: string
+          example: "+201012345678"
+        governorate:
+          type: string
+          example: "Cairo"
+        city:
+          type: string
+          example: "Heliopolis"
+        street:
+          type: string
+          example: "123 Main Street"
+        buildingNumber:
+          type: integer
+          example: 42
+        apartmentNumber:
+          type: integer
+          example: 5
+        gender:
+          type: string
+          enum: ["male", "female"]
+          example: "male"
+        role:
+          type: string
+          enum: ["parent", "admin"]
+          example: "parent"
+        profileImg:
+          type: string
+          example: "https://res.cloudinary.com/your-cloud/image/upload/profile.jpg"
   securitySchemes:
     BearerAuth:
       type: http

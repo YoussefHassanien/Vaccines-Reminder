@@ -13,7 +13,16 @@ export const signupValidator = [
     .isLength({ max: 15 })
     .withMessage("First name is too long")
     .custom((value, { req }) => {
-      req.body.slug = slugify(value + " " + req.body.lName, { lower: true });
+      req.body.slug = slugify(
+        value + "-" + req.body.lName + "-" + `${Date.now()}`,
+        {
+          lower: true,
+          trim: true,
+          remove: /[^\w-]+/g,
+        }
+      )
+        .replace(/--+/g, "-")
+        .replace(/^-+|-+$/g, "");
       return true;
     }),
 
@@ -83,7 +92,7 @@ export const signupValidator = [
         }
       })
     ),
-  ,
+
   check("governorate").notEmpty().withMessage("gov must have a value"),
   check("street").notEmpty().withMessage("street must have a value"),
   check("city").notEmpty().withMessage("city must have a value"),

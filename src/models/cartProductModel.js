@@ -38,14 +38,11 @@ const cartProductSchema = new mongoose.Schema(
 // Add compound unique index for cartId + productId
 cartProductSchema.index({ cartId: 1, productId: 1 }, { unique: true });
 
-// Add pre-save middleware to validate price calculation
+// Add pre-save middleware to auto-update price when quantity changes
 cartProductSchema.pre("save", async function (next) {
   try {
-    if (
-      this.isModified("productId") ||
-      this.isModified("quantity") ||
-      this.isModified("price")
-    ) {
+    // Only proceed if quantity was modified
+    if (this.isModified("quantity")) {
       // Fetch the product to get its price
       const product = await Product.findById(this.productId);
 
@@ -53,20 +50,20 @@ cartProductSchema.pre("save", async function (next) {
         return next(new Error(`Product with ID ${this.productId} not found`));
       }
 
-      // Calculate the expected price
-      const expectedPrice = product.price * this.quantity;
+      // Calculate and set the new price automatically
+      const newPrice = product.price * this.quantity;
 
-      // Compare with a small tolerance for floating point errors
-      if (Math.abs(this.price - expectedPrice) > 0.01) {
-        return next(
-          new Error(
-            `Price validation failed: expected ${expectedPrice} (${product.price} × ${this.quantity}), but got ${this.price}`
-          )
-        );
-      }
+      // Set the new price (this will mark price as modified)
+      this.price = newPrice;
+
+      console.log(
+        `Auto-updated price to ${newPrice} for cart product with product ID ${this.productId}`
+      );
     }
+
     next();
   } catch (error) {
+    console.error("Error in cart product pre-save middleware:", error);
     next(error);
   }
 });

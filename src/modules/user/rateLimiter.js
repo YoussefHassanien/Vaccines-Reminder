@@ -6,7 +6,7 @@ import rateLimit from "express-rate-limit";
  */
 export const signupLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  limit: 50, // 5 requests per window
+  limit: 5, // 5 requests per window
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -21,7 +21,7 @@ export const signupLimiter = rateLimit({
  */
 export const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  limit: 30, // 10 requests per window
+  limit: 10, // 10 requests per window
   standardHeaders: true,
   legacyHeaders: false,
   message: {
