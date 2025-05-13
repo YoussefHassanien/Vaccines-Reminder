@@ -1980,6 +1980,10 @@ paths:
                   format: date
                   description: Requested date for vaccination (must be a future date)
                   example: "2025-05-20"
+                phoneNumber:
+                  type: string
+                  description: Phone number of the parent
+                  example: "+201015411320"  
                 governorate:
                   type: string
                   description: Address governorate (4-30 characters)
@@ -2435,6 +2439,9 @@ components:
           type: string
           format: date
           example: "2025-05-20"
+        phoneNumber:
+          type: string
+          example: "+201234567891"  
         governorate:
           type: string
           example: "Cairo"

@@ -71,7 +71,19 @@ export const createVaccineRequestValidator = [
 
       return true;
     }),
-
+  
+  body("phoneNumber")
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .bail()
+    .trim()
+    .isMobilePhone(["ar-EG", "ar-SA"]) // For Egyptian and Saudi numbers
+    .withMessage(
+      "Invalid phone number format, only EG and SA phone numbers are accepted"
+    )
+    .bail()
+    .escape(),
+  
   body("governorate")
     .notEmpty()
     .withMessage("Governorate is required")
