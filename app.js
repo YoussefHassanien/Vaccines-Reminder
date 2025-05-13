@@ -15,6 +15,7 @@ import cartsRouter from "./src/modules/carts/route.js";
 import paymentRouter from "./src/modules/payment/route.js";
 import providerRoute from "./src/modules/providers/route.js";
 import vaccinesRouter from "./src/modules/vaccines/route.js";
+import vaccineRequestsRouter from "./src/modules/vaccines-requests/route.js";
 
 const app = express();
 
@@ -49,5 +50,6 @@ app.use("/api/carts", cartsRouter);
 app.use("/api/payment", paymentRouter);
 app.use("/api/provider", providerRoute);
 app.use("/api/vaccines", vaccinesRouter);
+app.use("/api/vaccine-requests", vaccineRequestsRouter);
 
 export default app;

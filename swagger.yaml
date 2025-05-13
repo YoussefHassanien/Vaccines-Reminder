@@ -1941,6 +1941,231 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/vaccine-requests:
+    post:
+      tags:
+        - Vaccine Requests
+      summary: Create new vaccine request
+      description: >
+        Submit a request for a child to receive a specific vaccine. 
+        Includes details such as vaccination date and address for the service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - childId
+                - vaccineId
+                - vaccinationDate
+                - governorate
+                - city
+                - street
+                - buildingNumber
+                - apartmentNumber
+              properties:
+                childId:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the child
+                  example: "60d21b4667d0d8992e610c88"
+                vaccineId:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the vaccine
+                  example: "60d21b4667d0d8992e610c86"
+                vaccinationDate:
+                  type: string
+                  format: date
+                  description: Requested date for vaccination (must be a future date)
+                  example: "2025-05-20"
+                governorate:
+                  type: string
+                  description: Address governorate (4-30 characters)
+                  example: "Cairo"
+                city:
+                  type: string
+                  description: Address city (4-50 characters)
+                  example: "Nasr City"
+                street:
+                  type: string
+                  description: Address street (4-100 characters)
+                  example: "Abbas El-Akkad St"
+                buildingNumber:
+                  type: integer
+                  description: Building number (positive integer)
+                  example: 42
+                apartmentNumber:
+                  type: integer
+                  description: Apartment number (positive integer)
+                  example: 5
+      responses:
+        "201":
+          description: Vaccine request created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine Request is successfully created"
+                  data:
+                    $ref: "#/components/schemas/VaccineRequest"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      childId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Child does not belong to you"
+                      vaccinationDate:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Vaccination date cannot be in the past"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Child or vaccine not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Child not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many vaccine request submissions. Please try again after 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error inserting vaccine request"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/vaccine-requests/admin:
+    get:
+      tags:
+        - Vaccine Requests
+      summary: Get all vaccine requests
+      description: Retrieve all vaccine requests (Admin only)
+      responses:
+        "200":
+          description: Vaccine requests retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine Requests retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/VaccineRequest"
+                  error:
+                    type: object
+                    nullable: true
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many vaccine request retrieval attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching vaccine requests"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Product:
@@ -2179,6 +2404,60 @@ components:
         workHours:
           type: string
           example: "9 AM to 5 PM"
+    VaccineRequest:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c90"
+        parentId:
+          type: string
+          format: uuid
+          description: ID of the parent who submitted the request
+          example: "60d21b4667d0d8992e610c84"
+        childId:
+          type: string
+          format: uuid
+          description: ID of the child
+          example: "60d21b4667d0d8992e610c88"
+        vaccineId:
+          type: string
+          format: uuid
+          description: ID of the requested vaccine
+          example: "60d21b4667d0d8992e610c86"
+        status:
+          type: string
+          enum: ["Pending", "Confirmed", "Rejected"]
+          default: "Pending"
+          example: "Pending"
+        vaccinationDate:
+          type: string
+          format: date
+          example: "2025-05-20"
+        governorate:
+          type: string
+          example: "Cairo"
+        city:
+          type: string
+          example: "Nasr City"
+        street:
+          type: string
+          example: "Abbas El-Akkad St"
+        buildingNumber:
+          type: integer
+          example: 42
+        apartmentNumber:
+          type: integer
+          example: 5
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-05-13T10:15:30Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-05-13T10:15:30Z"
   securitySchemes:
     BearerAuth:
       type: http
