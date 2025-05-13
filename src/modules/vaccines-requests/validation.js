@@ -71,7 +71,7 @@ export const createVaccineRequestValidator = [
 
       return true;
     }),
-
+  
   body("phoneNumber")
     .notEmpty()
     .withMessage("Phone number is required")
@@ -83,7 +83,7 @@ export const createVaccineRequestValidator = [
     )
     .bail()
     .escape(),
-
+  
   body("governorate")
     .notEmpty()
     .withMessage("Governorate is required")
