@@ -29,6 +29,17 @@ const vaccineRequestSchema = new mongoose.Schema(
       type: Date,
       required: [true, "Vaccination date is required"],
     },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      required: [true, "Phone number is required"],
+      validate: {
+        validator: function (v) {
+          return /^(\+?20|0)?1[0125]\d{8}$|^(\+?966|0)?5\d{8}$/.test(v); // For EG and SA numbers
+        },
+        message: (props) => `${props.value} is not a valid phone number!`,
+      },
+    },
     governorate: {
       type: String,
       trim: true,
