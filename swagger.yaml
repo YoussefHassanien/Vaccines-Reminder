@@ -2170,6 +2170,413 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/child/:
+    post:
+      tags:
+        - Children
+      summary: Add new child
+      description: Add a new child to the currently authenticated parent's account
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - birthDate
+                - gender
+                - bloodType
+                - ssn
+                - birthCertificate
+              properties:
+                name:
+                  type: string
+                  description: Child's name
+                  example: "Ahmed Mohamed"
+                birthDate:
+                  type: string
+                  format: date
+                  description: Child's date of birth
+                  example: "2020-01-15"
+                gender:
+                  type: string
+                  enum: ["male", "female"]
+                  description: Child's gender
+                  example: "male"
+                bloodType:
+                  type: string
+                  enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+                  description: Child's blood type
+                  example: "O+"
+                ssn:
+                  type: string
+                  description: Child's social security number (exactly 14 digits, must be unique)
+                  example: "30001152345678"
+                birthCertificate:
+                  type: string
+                  format: binary
+                  description: Child's birth certificate document (image file)
+      responses:
+        "201":
+          description: Child added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Child is successfully created"
+                  data:
+                    $ref: "#/components/schemas/Child"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or missing birth certificate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "birth certificate is required"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "409":
+          description: Conflict - SSN already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      ssn:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "SSN already exists"
+                          param:
+                            type: string
+                            example: "ssn"
+                          location:
+                            type: string
+                            example: "body"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error inserting child"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+        
+  /api/child/admin:
+    get:
+      tags:
+        - Children
+      summary: Get all children (Admin only)
+      description: Retrieve a paginated list of all children in the system using cursor-based pagination
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: MongoDB ObjectId of the last child from previous page
+          example: "60d21b4667d0d8992e610c85"
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of children per page
+          example: 10
+      responses:
+        "200":
+          description: Children retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Children are successfully retrieved"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Child"
+                  nextCursor:
+                    type: string
+                    nullable: true
+                    description: ObjectId of the last item, use for next page request
+                    example: "60d21b4667d0d8992e610c86"
+                  error:
+                    type: object
+                    nullable: true
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error getting all children"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/child/me:
+    get:
+      tags:
+        - Children
+      summary: Get current user's children
+      description: Retrieve all children associated with the currently authenticated user
+      responses:
+        "200":
+          description: Children retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Children are successfully retrieved"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Child"
+                  error:
+                    type: object
+                    nullable: true
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: No children found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "current user has no children"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching paginated children"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/child/{id}:
+    delete:
+      tags:
+        - Children
+      summary: Delete child
+      description: Delete a child by ID (only the parent who owns the child can delete it)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the child to delete
+          example: "60d21b4667d0d8992e610c86"
+      responses:
+        "200":
+          description: Child deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Child is successfully deleted"
+                  data:
+                    $ref: "#/components/schemas/Child"
+                  error:
+                    type: object
+                    nullable: true
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Child not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "child not found"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting child"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/user/me:
+    get:
+      tags:
+        - User
+      summary: Get current user profile
+      description: Retrieves the profile information of the currently authenticated user
+      responses:
+        "200":
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  user:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "User not found"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving user profile"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
 components:
   schemas:
     Product:
@@ -2191,7 +2598,7 @@ components:
           example: "High-quality vitamin D supplement for infants"
         image:
           type: string
-          example: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Products/1624291123123-vitamind.jpg"
+          example: "https://res.cloudinary.com/ddktkfkyy/image/upload/vitamin-d.jpg"
         quantity:
           type: integer
           example: 100
@@ -2465,6 +2872,43 @@ components:
           type: string
           format: date-time
           example: "2025-05-13T10:15:30Z"
+
+    Child:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c86"
+        userId:
+          type: string
+          format: uuid
+          description: ID of the parent user
+          example: "60d21b4667d0d8992e610c84"
+        name:
+          type: string
+          example: "Ahmed Mohamed"
+        birthDate:
+          type: string
+          format: date
+          example: "2020-01-15"
+        gender:
+          type: string
+          enum: ["male", "female"]
+          example: "male"
+        bloodType:
+          type: string
+          enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+          example: "O+"
+        ssn:
+          type: string
+          description: Social security number (14 digits)
+          example: "30001152345678"
+        birthCertificate:
+          type: string
+          description: URL to birth certificate document stored in Cloudinary
+          example: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Children/certificates/1624291123123-birth-cert.jpg"
+      
   securitySchemes:
     BearerAuth:
       type: http
