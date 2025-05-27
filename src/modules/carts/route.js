@@ -7,6 +7,7 @@ import {
   modifyCartProductQuantity,
   eraseCart,
   modifyCartStatus,
+  retrieveUserPendingCart,
 } from "./controller.js";
 import {
   createCartValidator,
@@ -16,6 +17,7 @@ import {
   modifyCartProductQuantityValidator,
   eraseCartValidator,
   modifyCartStatusValidator,
+  retrieveUserPendingCartValidator,
 } from "./validation.js";
 import {
   createCartLimiter,
@@ -25,6 +27,7 @@ import {
   modifyCartProductQuantityLimiter,
   eraseCartLimiter,
   modifyCartStatusLimiter,
+  retrieveUserPendingCartLimiter,
 } from "./rateLimiter.js";
 import { isAuthenticated } from "../../middlewares/authentication.js";
 
@@ -39,6 +42,15 @@ cartsRouter.post(
   createCart
 );
 
+// Get user's pending cart
+cartsRouter.get(
+  "/pending",
+  retrieveUserPendingCartLimiter,
+  isAuthenticated,
+  retrieveUserPendingCartValidator,
+  retrieveUserPendingCart
+);
+
 // Get cart details by ID
 cartsRouter.get(
   "/:cartId",
@@ -46,6 +58,24 @@ cartsRouter.get(
   isAuthenticated,
   retrieveUserCartDetailsValidator,
   retrieveUserCartDetails
+);
+
+// Delete entire cart
+cartsRouter.delete(
+  "/:cartId",
+  eraseCartLimiter,
+  isAuthenticated,
+  eraseCartValidator,
+  eraseCart
+);
+
+// Update cart status (for cash payments)
+cartsRouter.patch(
+  "/status/:cartId",
+  modifyCartStatusLimiter,
+  isAuthenticated,
+  modifyCartStatusValidator,
+  modifyCartStatus
 );
 
 // Add product to cart
@@ -73,24 +103,6 @@ cartsRouter.patch(
   isAuthenticated,
   modifyCartProductQuantityValidator,
   modifyCartProductQuantity
-);
-
-// Delete entire cart
-cartsRouter.delete(
-  "/:cartId",
-  eraseCartLimiter,
-  isAuthenticated,
-  eraseCartValidator,
-  eraseCart
-);
-
-// Update cart status (for cash payments)
-cartsRouter.patch(
-  "/status/:cartId",
-  modifyCartStatusLimiter,
-  isAuthenticated,
-  modifyCartStatusValidator,
-  modifyCartStatus
 );
 
 export default cartsRouter;

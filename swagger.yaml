@@ -1074,6 +1074,95 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/carts/pending:
+    get:
+      tags:
+        - Carts
+      summary: Get user's pending cart
+      description: Retrieve the current user's pending cart if one exists
+      responses:
+        "200":
+          description: Pending cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Pending cart retrieved successfully"
+                  data:
+                    $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                pendingCart:
+                  summary: "User's pending cart"
+                  value:
+                    message: "Pending cart retrieved successfully"
+                    data:
+                      _id: "60d21b4667d0d8992e610c87"
+                      userId: "60d21b4667d0d8992e610c85"
+                      productsCount: 2
+                      totalPrice: 79.98
+                      status: "Pending"
+                      governorate: "Cairo"
+                      city: "Nasr City"
+                      street: "Abbas El-Akkad Street"
+                      buildingNumber: 123
+                      apartmentNumber: 45
+                      paymentType: "Cash"
+                    error: null
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: No pending cart found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No pending cart found for this user"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many pending cart retrieval attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving pending cart"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Product:

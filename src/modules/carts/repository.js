@@ -426,3 +426,18 @@ export const updateCartStatus = async (cartId, userId) => {
     throw error;
   }
 };
+
+export const getUserPendingCart = async (userId) => {
+  try {
+    const cart = await Cart.findOne({ userId, status: "Pending" });
+
+    if (!cart) {
+      throw new Error(`Pending cart with user id: ${userId} not found`);
+    }
+
+    return formatMongoDbObjects(cart);
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};

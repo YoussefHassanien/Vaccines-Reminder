@@ -399,7 +399,42 @@ export const modifyCartStatusValidator = [
     .bail()
     .isMongoId()
     .withMessage("Invalid cart ID format")
-    .bail(),
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+        status: "Pending",
+        paymentType: "Cash",
+      });
 
+      if (!cart) {
+        throw new Error(
+          "Cart not found, does not belong to you, is not in 'Pending' status, or is not a cash payment cart"
+        );
+      }
+
+      // Check if cart has products
+      const cartProducts = await CartProduct.find({ cartId });
+
+      if (!cartProducts || cartProducts.length === 0) {
+        throw new Error(
+          "Cannot update status of an empty cart. Please add products first."
+        );
+      }
+
+      return true;
+    }),
+
+  validatorMiddleware,
+];
+
+/**
+ * Validates user pending cart retrieval request
+ * No specific validation needed since we only use the authenticated user's ID
+ */
+export const retrieveUserPendingCartValidator = [
+  // No specific validation needed for this endpoint
   validatorMiddleware,
 ];

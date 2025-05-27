@@ -12,6 +12,7 @@ import {
   removeCartProduct,
   removeCart,
   updateCartStatus,
+  getUserPendingCart,
 } from "./repository.js";
 
 /**
@@ -364,7 +365,10 @@ export const changeCartStatus = async (cartId, userId) => {
     };
   } catch (error) {
     // Handle specific error cases
-    if (error.message.includes("not found") || error.message.includes("not eligible")) {
+    if (
+      error.message.includes("not found") ||
+      error.message.includes("not eligible")
+    ) {
       return {
         statusCode: 404,
         message: error.message,
@@ -374,6 +378,37 @@ export const changeCartStatus = async (cartId, userId) => {
     return {
       statusCode: 500,
       message: "Error updating cart status",
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Fetches the user's pending cart
+ * @param {String} userId - User ID
+ * @returns {Object} Response with status code and message
+ */
+export const fetchUserPendingCart = async (userId) => {
+  try {
+    const pendingCart = await getUserPendingCart(userId);
+
+    return {
+      statusCode: 200,
+      message: "Pending cart retrieved successfully",
+      data: pendingCart,
+    };
+  } catch (error) {
+    // Handle specific error cases
+    if (error.message.includes("not found")) {
+      return {
+        statusCode: 404,
+        message: "No pending cart found for this user",
+      };
+    }
+
+    return {
+      statusCode: 500,
+      message: "Error retrieving pending cart",
       error: error.message,
     };
   }
