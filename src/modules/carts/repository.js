@@ -29,7 +29,6 @@ export const addCartProduct = async (cartProductData) => {
   }
 };
 
-
 /**
  * Removes a product from a cart and updates the cart totals
  * @param {String} cartProductId - MongoDB ObjectId of the cart product to remove
@@ -459,7 +458,6 @@ export const getUserConfirmedAndWaitingCarts = async (userId) => {
       .select("-__v -createdAt -updatedAt") // Exclude unwanted fields
       .lean(); // Get plain objects
 
-    console.log(carts);
     return carts || []; // Return empty array if no carts found
   } catch (error) {
     console.error(
