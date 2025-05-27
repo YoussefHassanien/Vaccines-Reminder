@@ -429,12 +429,3 @@ export const modifyCartStatusValidator = [
 
   validatorMiddleware,
 ];
-
-/**
- * Validates user pending cart retrieval request
- * No specific validation needed since we only use the authenticated user's ID
- */
-export const retrieveUserPendingCartValidator = [
-  // No specific validation needed for this endpoint
-  validatorMiddleware,
-];

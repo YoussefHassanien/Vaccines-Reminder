@@ -441,3 +441,30 @@ export const getUserPendingCart = async (userId) => {
     throw error;
   }
 };
+
+/**
+ * Get user's carts with status "Confirmed" or "Waiting for cash payment"
+ * @param {String} userId - MongoDB ObjectId of the user
+ * @returns {Promise<Array>} Array of user's confirmed and waiting carts
+ */
+export const getUserConfirmedAndWaitingCarts = async (userId) => {
+  try {
+    // Get user's carts with "Confirmed" or "Waiting for cash payment" status
+    const carts = await Cart.find({
+      userId,
+      status: { $in: ["Confirmed", "Waiting for cash payment"] },
+    })
+      .sort({ updatedAt: -1 })
+      .select("-__v -createdAt -updatedAt") // Exclude unwanted fields
+      .lean(); // Get plain objects
+
+    console.log(carts);
+    return carts || []; // Return empty array if no carts found
+  } catch (error) {
+    console.error(
+      `Error fetching confirmed and waiting carts for user id: ${userId}`,
+      error
+    );
+    throw error;
+  }
+};

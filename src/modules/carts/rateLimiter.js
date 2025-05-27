@@ -131,3 +131,20 @@ export const retrieveUserPendingCartLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: false,
 });
+
+/**
+ * Rate limiter for retrieving user's confirmed and waiting carts
+ * Allows frequent reads with 50 requests per minute
+ * Higher limit since users may check their order status frequently
+ */
+export const retrieveUserConfirmedAndWaitingCartsLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 50, // 50 requests per minute
+  message: {
+    message:
+      "Too many cart status retrieval attempts. Please try again after a minute.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+});

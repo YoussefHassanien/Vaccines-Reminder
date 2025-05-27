@@ -13,6 +13,7 @@ import {
   removeCart,
   updateCartStatus,
   getUserPendingCart,
+  getUserConfirmedAndWaitingCarts,
 } from "./repository.js";
 
 /**
@@ -409,6 +410,39 @@ export const fetchUserPendingCart = async (userId) => {
     return {
       statusCode: 500,
       message: "Error retrieving pending cart",
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Fetches user's confirmed and waiting carts
+ * @param {String} userId - User ID
+ * @returns {Object} Response with status code and message
+ */
+export const fetchUserConfirmedAndWaitingCarts = async (userId) => {
+  try {
+    const carts = await getUserConfirmedAndWaitingCarts(userId);
+
+    if (!carts || carts.length === 0) {
+      return {
+        statusCode: 404,
+        message:
+          "No confirmed or waiting for cash payment carts found for this user",
+      };
+    }
+
+    return {
+      statusCode: 200,
+      message:
+        "User's confirmed and waiting for cash payment carts retrieved successfully",
+      data: carts,
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      message:
+        "Error retrieving user's confirmed and waiting for cash payment carts",
       error: error.message,
     };
   }

@@ -8,6 +8,7 @@ import {
   eraseCart,
   modifyCartStatus,
   retrieveUserPendingCart,
+  retrieveUserConfirmedAndWaitingCarts,
 } from "./controller.js";
 import {
   createCartValidator,
@@ -17,7 +18,6 @@ import {
   modifyCartProductQuantityValidator,
   eraseCartValidator,
   modifyCartStatusValidator,
-  retrieveUserPendingCartValidator,
 } from "./validation.js";
 import {
   createCartLimiter,
@@ -28,6 +28,7 @@ import {
   eraseCartLimiter,
   modifyCartStatusLimiter,
   retrieveUserPendingCartLimiter,
+  retrieveUserConfirmedAndWaitingCartsLimiter,
 } from "./rateLimiter.js";
 import { isAuthenticated } from "../../middlewares/authentication.js";
 
@@ -47,8 +48,15 @@ cartsRouter.get(
   "/pending",
   retrieveUserPendingCartLimiter,
   isAuthenticated,
-  retrieveUserPendingCartValidator,
   retrieveUserPendingCart
+);
+
+// Get user's confirmed and waiting carts
+cartsRouter.get(
+  "/my-orders",
+  retrieveUserConfirmedAndWaitingCartsLimiter,
+  isAuthenticated,
+  retrieveUserConfirmedAndWaitingCarts
 );
 
 // Get cart details by ID

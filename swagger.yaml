@@ -1163,6 +1163,112 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/carts/my-orders:
+    get:
+      tags:
+        - Carts
+      summary: Get user's confirmed and waiting carts
+      description: Retrieve the current user's carts with status "Confirmed" or "Waiting for cash payment"
+      responses:
+        "200":
+          description: User's confirmed and waiting carts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User's confirmed and waiting carts retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                userOrders:
+                  summary: "User's order history"
+                  value:
+                    message: "User's confirmed and waiting carts retrieved successfully"
+                    data:
+                      - _id: "60d21b4667d0d8992e610c89"
+                        userId: "60d21b4667d0d8992e610c85"
+                        productsCount: 2
+                        totalPrice: 89.98
+                        status: "Confirmed"
+                        governorate: "Cairo"
+                        city: "Nasr City"
+                        street: "Abbas El-Akkad Street"
+                        buildingNumber: 123
+                        apartmentNumber: 45
+                        paymentType: "Online"
+                        createdAt: "2025-05-13T10:15:30Z"
+                        updatedAt: "2025-05-13T12:30:45Z"
+                      - _id: "60d21b4667d0d8992e610c88"
+                        userId: "60d21b4667d0d8992e610c85"
+                        productsCount: 1
+                        totalPrice: 29.99
+                        status: "Waiting for cash payment"
+                        governorate: "Alexandria"
+                        city: "Sidi Gaber"
+                        street: "Corniche Street"
+                        buildingNumber: 456
+                        apartmentNumber: 12
+                        paymentType: "Cash"
+                        createdAt: "2025-05-12T08:20:15Z"
+                        updatedAt: "2025-05-12T14:45:30Z"
+                    error: null
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: No confirmed or waiting carts found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No confirmed or waiting carts found for this user"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cart status retrieval attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving user's confirmed and waiting carts"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Product:
