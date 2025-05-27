@@ -398,3 +398,31 @@ export const removeCart = async (cartId, userId) => {
     throw error;
   }
 };
+
+export const updateCartStatus = async (cartId, userId) => {
+  try {
+    const cart = await Cart.findOne({
+      _id: cartId,
+      userId,
+      status: "Pending",
+      paymentType: "Cash",
+    });
+
+    if (!cart) {
+      throw new Error(
+        `Cart with id: ${cartId} not found for user with id: ${userId}`
+      );
+    }
+
+    cart.status = "Waiting for cash payment";
+    await cart.save();
+
+    return formatMongoDbObjects(cart);
+  } catch (error) {
+    console.error(
+      `Error updating status of cart with user id: ${userId} and cart id: ${cartId}`,
+      error
+    );
+    throw error;
+  }
+};

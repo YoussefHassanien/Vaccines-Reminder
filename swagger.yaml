@@ -947,6 +947,133 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/carts/status/{cartId}:
+    patch:
+      tags:
+        - Carts
+      summary: Update cart status
+      description: >
+        Update the status of a cash payment cart from "Pending" to "Waiting for cash payment".
+        This endpoint is used when a user confirms their cash payment cart.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart to update
+          example: "680cde050f7a995dadea207a"
+      responses:
+        "200":
+          description: Cart status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart status is updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      confirmedCart:
+                        allOf:
+                          - $ref: "#/components/schemas/Cart"
+                        examples:
+                          waitingForPaymentCart:
+                            $ref: "#/components/schemas/Cart/examples/waitingForPaymentCart"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                successfulUpdate:
+                  summary: "Successful status update"
+                  value:
+                    message: "Cart status is updated successfully"
+                    data:
+                      confirmedCart:
+                        _id: "60d21b4667d0d8992e610c88"
+                        userId: "60d21b4667d0d8992e610c85"
+                        productsCount: 2
+                        totalPrice: 89.98
+                        status: "Waiting for cash payment"
+                        governorate: "Alexandria"
+                        city: "Sidi Gaber"
+                        street: "Corniche Street"
+                        buildingNumber: 456
+                        apartmentNumber: 12
+                        paymentType: "Cash"
+                    error: null
+        "400":
+          description: Invalid input or cart validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cart not found, does not belong to you, is not in 'Pending' status, or is not a cash payment cart"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart with id: 680cde050f7a995dadea207a not found for user with id: 60d21b4667d0d8992e610c84"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cart status update attempts. Please try again after an hour."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating cart status"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Product:
@@ -1025,9 +1152,6 @@ components:
         buildingNumber:
           type: integer
           example: 123
-        appartmentNumber:
-          type: integer
-          example: 45
         apartmentNumber:
           type: integer
           example: 45
@@ -1035,6 +1159,51 @@ components:
           type: string
           enum: ["Cash", "Online"]
           example: "Cash"
+      examples:
+        pendingCart:
+          summary: "Pending Cart"
+          description: "A cart with pending status (newly created)"
+          value:
+            _id: "60d21b4667d0d8992e610c87"
+            userId: "60d21b4667d0d8992e610c85"
+            productsCount: 3
+            totalPrice: 149.97
+            status: "Pending"
+            governorate: "Cairo"
+            city: "1st Settlement"
+            street: "Main Street"
+            buildingNumber: 123
+            apartmentNumber: 45
+            paymentType: "Cash"
+        waitingForPaymentCart:
+          summary: "Waiting for Cash Payment Cart"
+          description: "A cart waiting for cash payment (status updated)"
+          value:
+            _id: "60d21b4667d0d8992e610c88"
+            userId: "60d21b4667d0d8992e610c85"
+            productsCount: 2
+            totalPrice: 89.98
+            status: "Waiting for cash payment"
+            governorate: "Alexandria"
+            city: "Sidi Gaber"
+            street: "Corniche Street"
+            buildingNumber: 456
+            apartmentNumber: 12
+            paymentType: "Cash"
+        confirmedCart:
+          summary: "Confirmed Cart"
+          description: "A cart that has been confirmed and processed"
+          value:
+            _id: "60d21b4667d0d8992e610c89"
+            userId: "60d21b4667d0d8992e610c85"
+            productsCount: 1
+            totalPrice: 29.99
+            status: "Confirmed"
+            governorate: "Giza"
+            city: "6th of October"
+            street: "Mall of Arabia Street"
+            buildingNumber: 789
+            apartmentNumber: 3
     CartProduct:
       type: object
       properties:

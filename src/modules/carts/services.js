@@ -11,6 +11,7 @@ import {
   updateProductQuantity,
   removeCartProduct,
   removeCart,
+  updateCartStatus,
 } from "./repository.js";
 
 /**
@@ -345,6 +346,34 @@ export const deleteCart = async (userId, cartId) => {
     return {
       statusCode: 500,
       message: "Error deleting cart",
+      error: error.message,
+    };
+  }
+};
+
+export const changeCartStatus = async (cartId, userId) => {
+  try {
+    const cart = await updateCartStatus(cartId, userId);
+
+    return {
+      statusCode: 200,
+      message: "Cart status is updated successfully",
+      data: {
+        confirmedCart: cart,
+      },
+    };
+  } catch (error) {
+    // Handle specific error cases
+    if (error.message.includes("not found") || error.message.includes("not eligible")) {
+      return {
+        statusCode: 404,
+        message: error.message,
+      };
+    }
+
+    return {
+      statusCode: 500,
+      message: "Error updating cart status",
       error: error.message,
     };
   }

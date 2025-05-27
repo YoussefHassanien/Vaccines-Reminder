@@ -13,6 +13,7 @@ export const createCartLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -28,6 +29,7 @@ export const retrieveUserCartDetailsLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -44,6 +46,7 @@ export const createCartProductLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -59,6 +62,7 @@ export const eraseCartProductLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -75,6 +79,7 @@ export const modifyCartProductQuantityLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -90,4 +95,22 @@ export const eraseCartLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
+});
+
+/**
+ * Rate limiter for cart status modification
+ * Restricts users to 10 status updates per hour
+ * This prevents abuse of cart status changes
+ */
+export const modifyCartStatusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 15, // 15 requests per 15 mins
+  message: {
+    message:
+      "Too many cart status update attempts. Please try again after 15 mins.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false,
 });

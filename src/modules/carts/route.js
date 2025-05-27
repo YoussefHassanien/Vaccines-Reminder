@@ -6,6 +6,7 @@ import {
   eraseCartProduct,
   modifyCartProductQuantity,
   eraseCart,
+  modifyCartStatus,
 } from "./controller.js";
 import {
   createCartValidator,
@@ -14,6 +15,7 @@ import {
   eraseCartProductValidator,
   modifyCartProductQuantityValidator,
   eraseCartValidator,
+  modifyCartStatusValidator,
 } from "./validation.js";
 import {
   createCartLimiter,
@@ -22,6 +24,7 @@ import {
   eraseCartProductLimiter,
   modifyCartProductQuantityLimiter,
   eraseCartLimiter,
+  modifyCartStatusLimiter,
 } from "./rateLimiter.js";
 import { isAuthenticated } from "../../middlewares/authentication.js";
 
@@ -79,6 +82,15 @@ cartsRouter.delete(
   isAuthenticated,
   eraseCartValidator,
   eraseCart
+);
+
+// Update cart status (for cash payments)
+cartsRouter.patch(
+  "/status/:cartId",
+  modifyCartStatusLimiter,
+  isAuthenticated,
+  modifyCartStatusValidator,
+  modifyCartStatus
 );
 
 export default cartsRouter;

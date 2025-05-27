@@ -388,3 +388,18 @@ export const eraseCartValidator = [
 
   validatorMiddleware,
 ];
+
+/**
+ * Validates cart status modification request
+ */
+export const modifyCartStatusValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail(),
+
+  validatorMiddleware,
+];
