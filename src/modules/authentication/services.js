@@ -28,21 +28,31 @@ export const loginService = async ({ email, password }, next) => {
   };
 };
 
-export const protectService = async (headers, next) => {
-  let token;
-  if (headers.authorization && headers.authorization.startsWith("bearer")) {
-    token = headers.authorization.split(" ")[1];
-  }
-  if (!token) {
-    return next(new ApiError("Please login to get access", 401));
-  }
+export const protectService = async (req, res, next) => {
+  try {
+    let token;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.toLowerCase().startsWith("bearer")) {
+      token = authHeader.split(" ")[1];
+    }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-  const user = await findUserById(decoded.id);
-  if (!user) {
-    return next(new ApiError("User not found", 401));
+    if (!token) {
+      return next(new ApiError("Please login to get access", 401));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await findUserById(decoded.id);
+
+    if (!user) {
+      return next(new ApiError("User not found", 401));
+    }
+
+    // Attach user to request for use in route handler
+    req.user = user;
+    next();
+  } catch (err) {
+    next(new ApiError("Unauthorized", 401));
   }
-  return user;
 };
 
 export const allowedToService = (user, roles, next) => {

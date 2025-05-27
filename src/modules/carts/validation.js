@@ -23,7 +23,7 @@ export const createCartValidator = [
     .withMessage("Status must be valid")
     .bail()
     .escape(),
-
+      
   body("cart.governorate")
     .if(body("cart.paymentType").equals("Cash"))
     .notEmpty()
@@ -87,7 +87,6 @@ export const createCartValidator = [
 
   validatorMiddleware,
 ];
-
 /**
  * Validates cart retrieval request
  */
@@ -196,13 +195,12 @@ export const createCartProductValidator = [
       if (!product) {
         throw new Error("Product not found");
       }
-
+      
       if (product.quantity < quantity) {
         throw new Error(
           `Insufficient inventory. Only ${product.quantity} units available.`
         );
       }
-
       return true;
     }),
 

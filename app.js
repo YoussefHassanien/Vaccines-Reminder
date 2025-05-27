@@ -9,7 +9,13 @@ import YAML from "yamljs";
 
 import productsRouter from "./src/modules/products/route.js";
 import authRouter from "./src/modules/authentication/route.js";
+import userRouter from "./src/modules/user/route.js";
+import childRouter from "./src/modules/child/route.js";
 import cartsRouter from "./src/modules/carts/route.js";
+import paymentRouter from "./src/modules/payment/route.js";
+import providerRoute from "./src/modules/providers/route.js";
+import vaccinesRouter from "./src/modules/vaccines/route.js";
+import vaccineRequestsRouter from "./src/modules/vaccines-requests/route.js";
 
 const app = express();
 
@@ -38,6 +44,12 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use("/api/products", productsRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter);
+app.use("/api/child", childRouter);
 app.use("/api/carts", cartsRouter);
+app.use("/api/payment", paymentRouter);
+app.use("/api/provider", providerRoute);
+app.use("/api/vaccines", vaccinesRouter);
+app.use("/api/vaccine-requests", vaccineRequestsRouter);
 
 export default app;

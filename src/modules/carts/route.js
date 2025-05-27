@@ -68,7 +68,6 @@ cartsRouter.get(
   retrieveUserCartDetails
 );
 
-// Delete entire cart
 cartsRouter.delete(
   "/:cartId",
   eraseCartLimiter,
@@ -112,5 +111,6 @@ cartsRouter.patch(
   modifyCartProductQuantityValidator,
   modifyCartProductQuantity
 );
+
 
 export default cartsRouter;
