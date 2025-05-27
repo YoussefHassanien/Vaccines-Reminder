@@ -29,6 +29,7 @@ export const addCartProduct = async (cartProductData) => {
   }
 };
 
+
 /**
  * Removes a product from a cart and updates the cart totals
  * @param {String} cartProductId - MongoDB ObjectId of the cart product to remove
@@ -395,6 +396,76 @@ export const removeCart = async (cartId, userId) => {
     }
   } catch (error) {
     console.error(`Error deleting cart with id: ${cartId}`, error);
+    throw error;
+  }
+};
+
+export const updateCartStatus = async (cartId, userId) => {
+  try {
+    const cart = await Cart.findOne({
+      _id: cartId,
+      userId,
+      status: "Pending",
+      paymentType: "Cash",
+    });
+
+    if (!cart) {
+      throw new Error(
+        `Cart with id: ${cartId} not found for user with id: ${userId}`
+      );
+    }
+
+    cart.status = "Waiting for cash payment";
+    await cart.save();
+
+    return formatMongoDbObjects(cart);
+  } catch (error) {
+    console.error(
+      `Error updating status of cart with user id: ${userId} and cart id: ${cartId}`,
+      error
+    );
+    throw error;
+  }
+};
+
+export const getUserPendingCart = async (userId) => {
+  try {
+    const cart = await Cart.findOne({ userId, status: "Pending" });
+
+    if (!cart) {
+      throw new Error(`Pending cart with user id: ${userId} not found`);
+    }
+
+    return formatMongoDbObjects(cart);
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+/**
+ * Get user's carts with status "Confirmed" or "Waiting for cash payment"
+ * @param {String} userId - MongoDB ObjectId of the user
+ * @returns {Promise<Array>} Array of user's confirmed and waiting carts
+ */
+export const getUserConfirmedAndWaitingCarts = async (userId) => {
+  try {
+    // Get user's carts with "Confirmed" or "Waiting for cash payment" status
+    const carts = await Cart.find({
+      userId,
+      status: { $in: ["Confirmed", "Waiting for cash payment"] },
+    })
+      .sort({ updatedAt: -1 })
+      .select("-__v -createdAt -updatedAt") // Exclude unwanted fields
+      .lean(); // Get plain objects
+
+    console.log(carts);
+    return carts || []; // Return empty array if no carts found
+  } catch (error) {
+    console.error(
+      `Error fetching confirmed and waiting carts for user id: ${userId}`,
+      error
+    );
     throw error;
   }
 };
