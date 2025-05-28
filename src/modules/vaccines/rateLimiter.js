@@ -33,3 +33,20 @@ export const retrieveVaccinesForParentLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: false,
 });
+
+/**
+ * Rate limiter for vaccine deletion
+ * Restricts admins to 10 vaccine deletion requests per 5 minutes
+ * Stricter limit to prevent accidental mass deletion
+ */
+export const deleteVaccineLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // 10 requests per 5 minutes
+  message: {
+    message:
+      "Too many vaccine deletion attempts. Please try again after 5 minutes.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false, // Don't skip counts for successful requests
+});

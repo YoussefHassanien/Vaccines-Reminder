@@ -13,6 +13,7 @@ export const createCartLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -28,6 +29,7 @@ export const retrieveUserCartDetailsLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -44,6 +46,7 @@ export const createCartProductLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -59,6 +62,7 @@ export const eraseCartProductLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -75,6 +79,7 @@ export const modifyCartProductQuantityLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: false,
 });
 
 /**
@@ -88,6 +93,60 @@ export const eraseCartLimiter = rateLimit({
   message: {
     message: "Too many cart deletion attempts. Please try again after an hour.",
   },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+});
+
+/**
+ * Rate limiter for cart status modification
+ * Restricts users to 10 status updates per hour
+ * This prevents abuse of cart status changes
+ */
+export const modifyCartStatusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 15, // 15 requests per 15 mins
+  message: {
+    message:
+      "Too many cart status update attempts. Please try again after 15 mins.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false,
+});
+
+/**
+ * Rate limiter for retrieving user pending cart
+ * Allows frequent reads with 100 requests per minute
+ * Higher limit since this is a common operation for checking cart status
+ */
+export const retrieveUserPendingCartLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute
+  message: {
+    message:
+      "Too many pending cart retrieval attempts. Please try again after a minute.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+});
+
+/**
+ * Rate limiter for retrieving user's confirmed and waiting carts
+ * Allows frequent reads with 50 requests per minute
+ * Higher limit since users may check their order status frequently
+ */
+export const retrieveUserConfirmedAndWaitingCartsLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 50, // 50 requests per minute
+  message: {
+    message:
+      "Too many cart status retrieval attempts. Please try again after a minute.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
   standardHeaders: true,
   legacyHeaders: false,
 });

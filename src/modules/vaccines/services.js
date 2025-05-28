@@ -1,4 +1,8 @@
-import { addNewVaccine, getAllVaccinesForParent } from "./repository.js";
+import {
+  addNewVaccine,
+  getAllVaccinesForParent,
+  removeVaccine,
+} from "./repository.js";
 
 /**
  * Creates a new vaccine in the database
@@ -44,6 +48,37 @@ export const fetchAllVaccinesForParent = async () => {
     return {
       statusCode: 500,
       message: "Error fetching vaccines",
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Deletes a vaccine from the database
+ * @param {String} vaccineId - Vaccine ID to delete
+ * @returns {Object} Response with status code and message
+ */
+export const deleteVaccine = async (vaccineId) => {
+  try {
+    const deletedVaccine = await removeVaccine(vaccineId);
+
+    return {
+      statusCode: 200,
+      message: "Vaccine is successfully deleted",
+      data: deletedVaccine,
+    };
+  } catch (error) {
+    // Handle specific error cases
+    if (error.message.includes("not found")) {
+      return {
+        statusCode: 404,
+        message: error.message,
+      };
+    }
+
+    return {
+      statusCode: 500,
+      message: "Error deleting vaccine",
       error: error.message,
     };
   }
