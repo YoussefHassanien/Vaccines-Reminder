@@ -71,6 +71,7 @@ export const protectService = async (req, res, next) => {
       return next(new ApiError("User not found", 401));
     }
 
+
     // Attach user to request for use in route handler
     req.user = user;
     next();

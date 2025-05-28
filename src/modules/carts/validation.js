@@ -1,225 +1,429 @@
 import { body, param } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
-import mongoose from "mongoose";
-import { fetchProductById } from "./services.js";
-
-// New helper function for address field validation
-const validateAddressField = () => {
-  return (value, { req }) => {
-    // Skip validation if payment type is Online
-    if (req.body.cart.paymentType === "Online") return true;
-
-    // Otherwise require the field for Cash payments
-    if (value === undefined || value === null || value === "") {
-      return false; // Validation failed
-    }
-    return true;
-  };
-};
+import Cart from "../../models/cartModel.js";
+import Product from "../../models/productModel.js";
+import CartProduct from "../../models/cartProductModel.js";
 
 /**
- * Validation middleware for cart creation
- *
- * Validates all required cart fields according to the cart model schema:
- * - productsCount: Positive integer, required matching the sum of quantaties given in the cartProductsData Array
- * - totalPrice: Positive number, required and matching the sum of prices given in the cartProductsData Array
- * - governorate: String, 4-30 chars, required for Cash payments only
- * - city: String, 4-50 chars, required for Cash payments only
- * - street: String, 4-100 chars, required for Cash payments only
- * - buildingNumber: Positive integer, required for Cash payments only
- * - appartmentNumber: Positive integer, required for Cash payments only
- * - paymentType: Optional, enum ["Cash", "Online"]
+ * Validates cart creation request
  */
 export const createCartValidator = [
-  // Products array validation
-  body("products")
-    .isArray({ min: 1 })
-    .withMessage("Cart must contain at least one product"),
+  body("cart").notEmpty().withMessage("Cart data is required"),
 
-  // Validate each product in the array
-  body("products.*.productId")
-    .notEmpty()
-    .withMessage("Product ID is required for each product")
-    .bail()
-    .custom((value) => mongoose.Types.ObjectId.isValid(value))
-    .withMessage("Invalid product ID format"),
-
-  // Validate product IDs are unique
-  body("products")
-    .custom((products) => {
-      // Create a set of product IDs to check for duplicates
-      const productIds = new Set();
-
-      // Check each product ID
-      for (const product of products) {
-        if (productIds.has(product.productId)) {
-          return false; // Duplicate found
-        }
-        productIds.add(product.productId);
-      }
-
-      return true; // All product IDs are unique
-    })
-    .withMessage(
-      "Each product in the cart must be unique. Duplicate product IDs found."
-    ),
-
-  body("products.*.quantity")
-    .isInt({ min: 1 })
-    .withMessage("Quantity must be a positive integer"),
-
-  body("products.*.price")
-    .isFloat({ min: 0.01 })
-    .withMessage("Product price must be a positive number"),
-
-  // Product price validation against database - add this custom validator
-  body("products").custom(async (products, { req }) => {
-    // Check each product's price against database
-    for (const product of products) {
-      const productResponse = await fetchProductById(product.productId);
-
-      // If product not found, throw error
-      if (productResponse.statusCode !== 200) {
-        throw new Error(`Product not found: ${productResponse.message}`);
-      }
-
-      const databaseProduct = productResponse.data;
-      const expectedPrice = Number(databaseProduct.price * product.quantity);
-
-      // Compare with the provided price (with small tolerance for floating point)
-      if (Math.abs(Number(product.price) - expectedPrice) > 0.01) {
-        throw new Error(
-          `Product ${product.productId} price incorrect: expected ${expectedPrice} but got ${product.price}`
-        );
-      }
-    }
-
-    return true;
-  }),
-
-  // Totals validation - custom validator to ensure consistency
-  body().custom((body) => {
-    // Skip validation if products array is missing or invalid
-    if (!Array.isArray(body.products)) return true;
-
-    // Calculate expected totals from products
-    const calculatedTotalPrice = body.products.reduce(
-      (sum, product) => sum + Number(product.price),
-      0
-    );
-
-    const calculatedProductsCount = body.products.reduce(
-      (sum, product) => sum + Number(product.quantity),
-      0
-    );
-
-    // Compare with provided values (with small tolerance for floating point)
-    const priceMatches =
-      Math.abs(calculatedTotalPrice - parseFloat(body.cart.totalPrice)) < 0.01;
-    const countMatches =
-      calculatedProductsCount === parseInt(body.cart.productsCount, 10);
-
-    if (!priceMatches || !countMatches) {
-      throw new Error(
-        `Cart totals don't match products data. Expected: ${calculatedTotalPrice} and ${calculatedProductsCount} but got ${body.cart.totalPrice} and ${body.cart.productsCount}`
-      );
-    }
-
-    return true;
-  }),
-
-  // Cart object validation
-  body("cart").isObject().withMessage("Cart details must be provided"),
-
-  // Products count validation
-  body("cart.productsCount")
-    .notEmpty()
-    .withMessage("Products count is required")
-    .bail()
-    .isInt({ min: 1 })
-    .withMessage("Products count must be a positive integer"),
-
-  // Total price validation
-  body("cart.totalPrice")
-    .notEmpty()
-    .withMessage("Total price is required")
-    .bail()
-    .isFloat({ min: 1 })
-    .withMessage("Total price must be a positive number"),
-
-  // Payment type validation (must be validated early since other validations depend on it)
   body("cart.paymentType")
     .optional()
-    .escape()
     .isIn(["Cash", "Online"])
-    .withMessage("Payment type must be either 'Cash' or 'Online'"),
-
-  // Conditional address validations based on payment type
-  body("cart.governorate")
-    .custom(validateAddressField)
-    .withMessage(`Governorate is required for Cash payment`)
+    .withMessage("Payment type must be either 'Cash' or 'Online'")
     .bail()
-    .optional({ checkFalsy: true })
-    .trim()
+    .escape(),
+
+  body("cart.status")
+    .optional()
+    .equals("Pending")
+    .withMessage("Status must be valid")
+    .bail()
+    .escape(),
+      
+  body("cart.governorate")
+    .if(body("cart.paymentType").equals("Cash"))
+    .notEmpty()
+    .withMessage("Governorate is required for cash payment")
+    .bail()
     .isLength({ min: 4, max: 30 })
     .withMessage("Governorate must be between 4 and 30 characters")
     .bail()
     .escape(),
 
   body("cart.city")
-    .custom(validateAddressField)
-    .withMessage(`City is required for Cash payment`)
+    .if(body("cart.paymentType").equals("Cash"))
+    .notEmpty()
+    .withMessage("City is required for cash payment")
     .bail()
-    .optional({ checkFalsy: true })
-    .trim()
     .isLength({ min: 4, max: 50 })
     .withMessage("City must be between 4 and 50 characters")
     .bail()
     .escape(),
 
   body("cart.street")
-    .custom(validateAddressField)
-    .withMessage(`Street is required for Cash payment`)
+    .if(body("cart.paymentType").equals("Cash"))
+    .notEmpty()
+    .withMessage("Street is required for cash payment")
     .bail()
-    .optional({ checkFalsy: true })
-    .trim()
     .isLength({ min: 4, max: 100 })
     .withMessage("Street must be between 4 and 100 characters")
     .bail()
     .escape(),
 
   body("cart.buildingNumber")
-    .custom(validateAddressField)
-    .withMessage(`Building Number is required for Cash payment`)
+    .if(body("cart.paymentType").equals("Cash"))
+    .notEmpty()
+    .withMessage("Building number is required for cash payment")
     .bail()
-    .optional({ checkFalsy: true })
     .isInt({ min: 1 })
-    .withMessage("Building number must be a positive integer"),
+    .withMessage("Building number must be a positive integer")
+    .bail(),
 
   body("cart.apartmentNumber")
-    .custom(validateAddressField)
-    .withMessage(`Apartment Number is required for Cash payment`)
+    .if(body("cart.paymentType").equals("Cash"))
+    .notEmpty()
+    .withMessage("Apartment number is required for cash payment")
     .bail()
-    .optional({ checkFalsy: true })
     .isInt({ min: 1 })
-    .withMessage("Apartment number must be a positive integer"),
+    .withMessage("Apartment number must be a positive integer")
+    .bail(),
+
+  // Check if user already has a pending cart
+  body().custom(async (_, { req }) => {
+    const userId = req.user._id;
+    const existingCart = await Cart.findOne({ userId, status: "Pending" });
+
+    if (existingCart) {
+      throw new Error(
+        "You already have a pending cart. Please complete or delete it first."
+      );
+    }
+    return true;
+  }),
+
+  validatorMiddleware,
+];
+/**
+ * Validates cart retrieval request
+ */
+export const retrieveUserCartDetailsValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+      });
+
+      if (!cart) {
+        throw new Error("Cart not found or does not belong to you");
+      }
+
+      return true;
+    }),
 
   validatorMiddleware,
 ];
 
 /**
- * Validation middleware for retrieving user cart details
- *
- * Validates that the cartId parameter is a valid MongoDB ObjectId
+ * Validates cart product creation (adding product to cart)
  */
-export const retrieveUserCartDetailsValidator = [
-  // Validate cartId parameter
+export const createCartProductValidator = [
   param("cartId")
     .notEmpty()
     .withMessage("Cart ID is required")
     .bail()
-    .custom((value) => mongoose.Types.ObjectId.isValid(value))
-    .withMessage("Invalid cart ID format. Must be a valid MongoDB ObjectId"),
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+        status: "Pending",
+      });
+
+      if (!cart) {
+        throw new Error(
+          "Cart not found, does not belong to you, or is not in 'Pending' status"
+        );
+      }
+
+      return true;
+    }),
+
+  body("productId")
+    .notEmpty()
+    .withMessage("Product ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid product ID format")
+    .bail()
+    .custom(async (productId, { req }) => {
+      // Check if product exists
+      const product = await Product.findById(productId);
+
+      if (!product) {
+        throw new Error("Product not found");
+      }
+
+      // Check if product is in stock
+      if (product.quantity < 1) {
+        throw new Error("Product is out of stock");
+      }
+
+      const cartId = req.params.cartId;
+
+      // Check if product is already in cart
+      const existingCartProduct = await CartProduct.findOne({
+        cartId,
+        productId,
+      });
+
+      if (existingCartProduct) {
+        throw new Error(
+          "This product is already in your cart. Use the update quantity endpoint instead."
+        );
+      }
+
+      return true;
+    }),
+
+  body("quantity")
+    .notEmpty()
+    .withMessage("Quantity is required")
+    .bail()
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be at least 1")
+    .bail()
+    .custom(async (quantity, { req }) => {
+      // Check if there's enough inventory
+      const productId = req.body.productId;
+      const product = await Product.findById(productId);
+
+      if (!product) {
+        throw new Error("Product not found");
+      }
+      
+      if (product.quantity < quantity) {
+        throw new Error(
+          `Insufficient inventory. Only ${product.quantity} units available.`
+        );
+      }
+      return true;
+    }),
+
+  validatorMiddleware,
+];
+
+/**
+ * Validates cart product removal request
+ */
+export const eraseCartProductValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+        status: "Pending",
+      });
+
+      if (!cart) {
+        throw new Error(
+          "Cart not found, does not belong to you, or is not in 'Pending' status"
+        );
+      }
+
+      return true;
+    }),
+
+  param("productId")
+    .notEmpty()
+    .withMessage("Product ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid product ID format")
+    .bail()
+    .custom(async (productId, { req }) => {
+      const cartId = req.params.cartId;
+
+      // Check if product exists in cart
+      const cartProduct = await CartProduct.findOne({
+        cartId,
+        productId,
+      });
+
+      if (!cartProduct) {
+        throw new Error("Product not found in this cart");
+      }
+
+      return true;
+    }),
+
+  validatorMiddleware,
+];
+
+/**
+ * Validates cart product quantity update request
+ */
+export const modifyCartProductQuantityValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+        status: "Pending",
+      });
+
+      if (!cart) {
+        throw new Error(
+          "Cart not found, does not belong to you, or is not in 'Pending' status"
+        );
+      }
+
+      return true;
+    }),
+
+  param("productId")
+    .notEmpty()
+    .withMessage("Product ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid product ID format")
+    .bail()
+    .custom(async (productId, { req }) => {
+      const cartId = req.params.cartId;
+
+      // Check if product exists in cart
+      const cartProduct = await CartProduct.findOne({
+        cartId,
+        productId,
+      });
+
+      if (!cartProduct) {
+        throw new Error("Product not found in this cart");
+      }
+
+      return true;
+    }),
+
+  body("quantity")
+    .notEmpty()
+    .withMessage("Quantity is required")
+    .bail()
+    .isInt({ min: 1 })
+    .withMessage("Quantity must be at least 1")
+    .bail()
+    .custom(async (quantity, { req }) => {
+      // Get current quantity to calculate difference
+      const { cartId, productId } = req.params;
+      const cartProduct = await CartProduct.findOne({ cartId, productId });
+
+      if (!cartProduct) {
+        throw new Error("Cart product not found!");
+      }
+      quantity = parseInt(quantity, 10);
+      const currentQuantity = parseInt(cartProduct.quantity, 10);
+
+      // Calculate how many more units we need
+      const quantityDifference = quantity - currentQuantity;
+
+      // If we're increasing quantity, check inventory
+      if (quantityDifference > 0) {
+        const product = await Product.findById(productId);
+
+        if (!product) {
+          throw new Error("Product not found");
+        }
+
+        if (parseInt(product.quantity, 10) < quantityDifference) {
+          throw new Error(
+            `Insufficient inventory. Only ${product.quantity} additional units available.`
+          );
+        }
+      }
+
+      return true;
+    }),
+
+  validatorMiddleware,
+];
+
+/**
+ * Validates cart deletion request
+ */
+export const eraseCartValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+      });
+
+      if (!cart) {
+        throw new Error("Cart not found or does not belong to you");
+      }
+
+      // Check if cart is in a status that allows deletion
+      if (cart.status !== "Pending") {
+        throw new Error(`Cannot delete cart with status: ${cart.status}`);
+      }
+
+      return true;
+    }),
+
+  validatorMiddleware,
+];
+
+/**
+ * Validates cart status modification request
+ */
+export const modifyCartStatusValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+        status: "Pending",
+        paymentType: "Cash",
+      });
+
+      if (!cart) {
+        throw new Error(
+          "Cart not found, does not belong to you, is not in 'Pending' status, or is not a cash payment cart"
+        );
+      }
+
+      // Check if cart has products
+      const cartProducts = await CartProduct.find({ cartId });
+
+      if (!cartProducts || cartProducts.length === 0) {
+        throw new Error(
+          "Cannot update status of an empty cart. Please add products first."
+        );
+      }
+
+      return true;
+    }),
 
   validatorMiddleware,
 ];
