@@ -72,13 +72,13 @@ export const signupValidator = [
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters")
     .custom((value, { req }) => {
-      if (value !== req.body.passwordComfirm) {
+      if (value !== req.body.passwordConfirm) {
         throw new Error("Passwords don't match");
       }
       return true;
     }),
 
-  check("passwordComfirm")
+  check("passwordConfirm")
     .notEmpty()
     .withMessage("Confirm password is required"),
 
@@ -143,7 +143,7 @@ export const updatePasswordValidator = [
     .withMessage("new password is required")
     .isLength({ min: 6 })
     .withMessage("new password must be at least 6 characters"),
-  check("passwordComfirm")
+  check("passwordConfirm")
     .notEmpty()
     .withMessage("confirm password is required")
     .custom((value, { req }) => {
