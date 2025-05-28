@@ -99,9 +99,9 @@ export const signupValidator = [
   check("buildingNumber")
     .notEmpty()
     .withMessage("buildingNumber must have a value"),
-  check("appartmentNumber")
+  check("apartmentNumber")
     .notEmpty()
-    .withMessage("appartmentNumber must have a value"),
+    .withMessage("apartmentNumber must have a value"),
   check("gender")
     .notEmpty()
     .withMessage("gender must be specified")
