@@ -10,6 +10,9 @@ import {
   changeCartProductsCount,
   fetchCartProductsByCartId,
   deleteCart,
+  changeCartStatus,
+  fetchUserPendingCart,
+  fetchUserConfirmedAndWaitingCarts,
 } from "./services.js";
 
 /**
@@ -308,6 +311,67 @@ export const eraseCart = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: error.message || "Error deleting cart",
+      error: error.error,
+    });
+  }
+};
+
+export const modifyCartStatus = async (req, res) => {
+  const user = req.user;
+  const userId = user._id;
+  const { cartId } = req.params;
+
+  try {
+    const { statusCode, message, data, error } = await changeCartStatus(
+      cartId,
+      userId
+    );
+
+    return res.status(statusCode).json({ message, data, error });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Error updating cart status",
+      error: error.error,
+    });
+  }
+};
+
+export const retrieveUserPendingCart = async (req, res) => {
+  const user = req.user;
+  const userId = user._id;
+
+  try {
+    const { statusCode, message, data, error } = await fetchUserPendingCart(
+      userId
+    );
+
+    return res.status(statusCode).json({ message, data, error });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Error retrieving user pending cart",
+      error: error.error,
+    });
+  }
+};
+
+/**
+ * Retrieves user's confirmed and waiting carts
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const retrieveUserConfirmedAndWaitingCarts = async (req, res) => {
+  const user = req.user;
+  const userId = user._id;
+
+  try {
+    const { statusCode, message, data, error } =
+      await fetchUserConfirmedAndWaitingCarts(userId);
+
+    return res.status(statusCode).json({ message, data, error });
+  } catch (error) {
+    return res.status(500).json({
+      message:
+        error.message || "Error retrieving user's confirmed and waiting carts",
       error: error.error,
     });
   }
