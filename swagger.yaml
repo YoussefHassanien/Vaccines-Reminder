@@ -3370,6 +3370,274 @@ paths:
                     example: "Server error"
       security:
         - BearerAuth: []
+
+  /api/complaints:
+    post:
+      tags:
+        - Complaints
+      summary: Create new complaint
+      description: Submit a new complaint or suggestion to the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+                - type
+              properties:
+                message:
+                  type: string
+                  description: Complaint or suggestion message (10-5000 characters)
+                  example: "I experienced difficulties accessing the vaccine booking system. The page keeps loading indefinitely and I cannot complete my child's vaccination appointment."
+                type:
+                  type: string
+                  enum: ["Complaint", "Suggestion"]
+                  description: Type of feedback being submitted
+                  example: "Complaint"
+      responses:
+        "201":
+          description: Complaint created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Complaint is successfully created"
+                  data:
+                    $ref: "#/components/schemas/Complaint"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                newComplaint:
+                  summary: "Successfully created complaint"
+                  value:
+                    message: "Complaint is successfully created"
+                    data:
+                      _id: "60d21b4667d0d8992e610c91"
+                      userId: "60d21b4667d0d8992e610c84"
+                      message: "I experienced difficulties accessing the vaccine booking system. The page keeps loading indefinitely and I cannot complete my child's vaccination appointment."
+                      type: "Complaint"
+                      createdAt: "2025-05-28T14:30:45Z"
+                      updatedAt: "2025-05-28T14:30:45Z"
+                    error: null
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      message:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Message must be between 10 and 5000 characters"
+                          param:
+                            type: string
+                            example: "message"
+                          location:
+                            type: string
+                            example: "body"
+                      type:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Invalid complaint type. Must be one of: Complaint, Suggestion"
+                          param:
+                            type: string
+                            example: "type"
+                          location:
+                            type: string
+                            example: "body"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many complaint submissions. Please try again after 15 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error creating complaint"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/complaints/admin:
+    get:
+      tags:
+        - Complaints
+      summary: Get all complaints (Admin only)
+      description: Retrieve all complaints and suggestions submitted by users with user details
+      responses:
+        "200":
+          description: Complaints retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Complaints retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/Complaint"
+                        - type: object
+                          properties:
+                            user:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  format: uuid
+                                  example: "60d21b4667d0d8992e610c84"
+                                fName:
+                                  type: string
+                                  example: "Ahmed"
+                                lName:
+                                  type: string
+                                  example: "Mohamed"
+                                email:
+                                  type: string
+                                  example: "ahmed@example.com"
+                                phoneNumber:
+                                  type: string
+                                  example: "+201012345678"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                complaintsList:
+                  summary: "List of complaints with user details"
+                  value:
+                    message: "Complaints retrieved successfully"
+                    data:
+                      - _id: "60d21b4667d0d8992e610c91"
+                        message: "I experienced difficulties accessing the vaccine booking system. The page keeps loading indefinitely and I cannot complete my child's vaccination appointment."
+                        type: "Complaint"
+                        user:
+                          _id: "60d21b4667d0d8992e610c84"
+                          fName: "Ahmed"
+                          lName: "Mohamed"
+                          email: "ahmed@example.com"
+                          phoneNumber: "+201012345678"
+                        createdAt: "2025-05-28T14:30:45Z"
+                        updatedAt: "2025-05-28T14:30:45Z"
+                      - _id: "60d21b4667d0d8992e610c92"
+                        message: "It would be great if you could add a mobile app for easier access to vaccination schedules and reminders."
+                        type: "Suggestion"
+                        user:
+                          _id: "60d21b4667d0d8992e610c85"
+                          fName: "Sara"
+                          lName: "Ali"
+                          email: "sara@example.com"
+                          phoneNumber: "+201098765432"
+                        createdAt: "2025-05-27T09:15:30Z"
+                        updatedAt: "2025-05-27T09:15:30Z"
+                    error: null
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "404":
+          description: No complaints found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No complaints found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many complaint retrieval attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching complaints"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
     Product:
@@ -3746,7 +4014,63 @@ components:
           type: string
           description: URL to birth certificate document stored in Cloudinary
           example: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Children/certificates/1624291123123-birth-cert.jpg"
-      
+
+    Complaint:
+      type: object
+      description: >
+        Represents a user complaint or suggestion submitted to the system.
+        Contains feedback about system functionality, issues, or improvement suggestions.
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c91"
+        userId:
+          type: string
+          format: uuid
+          description: ID of the user who submitted the complaint
+          example: "60d21b4667d0d8992e610c84"
+        message:
+          type: string
+          description: The complaint or suggestion content
+          example: "I experienced difficulties accessing the vaccine booking system. The page keeps loading indefinitely and I cannot complete my child's vaccination appointment."
+        type:
+          type: string
+          enum: ["Complaint", "Suggestion"]
+          description: Type of feedback submitted
+          example: "Complaint"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the complaint was submitted
+          example: "2025-05-28T14:30:45Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the complaint was last updated
+          example: "2025-05-28T14:30:45Z"
+      examples:
+        userComplaint:
+          summary: "User complaint about system issues"
+          description: "A complaint submitted by a user about technical difficulties"
+          value:
+            _id: "60d21b4667d0d8992e610c91"
+            userId: "60d21b4667d0d8992e610c84"
+            message: "I experienced difficulties accessing the vaccine booking system. The page keeps loading indefinitely and I cannot complete my child's vaccination appointment."
+            type: "Complaint"
+            createdAt: "2025-05-28T14:30:45Z"
+            updatedAt: "2025-05-28T14:30:45Z"
+        userSuggestion:
+          summary: "User suggestion for improvement"
+          description: "A suggestion submitted by a user for system enhancement"
+          value:
+            _id: "60d21b4667d0d8992e610c92"
+            userId: "60d21b4667d0d8992e610c85"
+            message: "It would be great if you could add a mobile app for easier access to vaccination schedules and reminders."
+            type: "Suggestion"
+            createdAt: "2025-05-27T09:15:30Z"
+            updatedAt: "2025-05-27T09:15:30Z"
+
   securitySchemes:
     BearerAuth:
       type: http
