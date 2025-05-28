@@ -17,7 +17,6 @@ import providerRoute from "./src/modules/providers/route.js";
 import vaccinesRouter from "./src/modules/vaccines/route.js";
 import vaccineRequestsRouter from "./src/modules/vaccines-requests/route.js";
 
-
 const app = express();
 
 app.use(helmet());

@@ -1,4 +1,8 @@
-import { insertVaccine, fetchAllVaccinesForParent } from "./services.js";
+import {
+  insertVaccine,
+  fetchAllVaccinesForParent,
+  deleteVaccine,
+} from "./services.js";
 
 /**
  * Creates a new vaccine
@@ -49,6 +53,26 @@ export const retrieveVaccinesForParent = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: error.message || "Error retrieving vaccines",
+      error: error.error,
+    });
+  }
+};
+
+/**
+ * Deletes a vaccine
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const eraseVaccine = async (req, res) => {
+  const { vaccineId } = req.params;
+
+  try {
+    const { statusCode, message, data, error } = await deleteVaccine(vaccineId);
+
+    return res.status(statusCode).json({ message, data, error });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Error deleting vaccine",
       error: error.error,
     });
   }

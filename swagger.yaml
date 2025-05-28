@@ -2241,7 +2241,7 @@ paths:
                     type: string
                     example: "Internal server error"
 
-  /api/vaccines/admin/add:
+  /api/vaccines/admin:
     post:
       tags:
         - Vaccines
@@ -2392,6 +2392,137 @@ paths:
                     example: "Server error"
       security:
         - BearerAuth: []
+
+  /api/vaccines/admin/{vaccineId}:
+    delete:
+      tags:
+        - Vaccines
+      summary: Delete vaccine
+      description: Delete a vaccine from the system (Admin only)
+      parameters:
+        - in: path
+          name: vaccineId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the vaccine to delete
+          example: "60d21b4667d0d8992e610c86"
+      responses:
+        "200":
+          description: Vaccine deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine is successfully deleted"
+                  data:
+                    $ref: "#/components/schemas/Vaccine"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                deletedVaccine:
+                  summary: "Successfully deleted vaccine"
+                  value:
+                    message: "Vaccine is successfully deleted"
+                    data:
+                      _id: "60d21b4667d0d8992e610c86"
+                      name: "Polio Vaccine"
+                      description: "Protects against poliomyelitis, a highly infectious viral disease that affects the nervous system and can cause permanent paralysis."
+                      requiredAge: "6 months"
+                      price: 49.99
+                      provider: "60d21b4667d0d8992e610c85"
+                    error: null
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      vaccineId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Vaccine not found"
+                          param:
+                            type: string
+                            example: "vaccineId"
+                          location:
+                            type: string
+                            example: "params"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "404":
+          description: Vaccine not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine with id: 60d21b4667d0d8992e610c86 not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many vaccine deletion attempts. Please try again after 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting vaccine"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []      
 
   /api/vaccines:
     get:
