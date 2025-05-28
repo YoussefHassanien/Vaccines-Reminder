@@ -122,3 +122,26 @@ export const loginValidator = [
     .withMessage("password must be at least 6 characters"),
   validatorMiddleware,
 ];
+
+export const updatePasswordValidator = [
+  check("oldPassword")
+    .notEmpty()
+    .withMessage("old password is required")
+    .isLength({ min: 6 })
+    .withMessage("old password must be at least 6 characters"),
+  check("newPassword")
+    .notEmpty()
+    .withMessage("new password is required")
+    .isLength({ min: 6 })
+    .withMessage("new password must be at least 6 characters"),
+  check("passwordComfirm")
+    .notEmpty()
+    .withMessage("confirm password is required")
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error("Passwords don't match");
+      }
+      return true;
+    }),
+  validatorMiddleware,
+];

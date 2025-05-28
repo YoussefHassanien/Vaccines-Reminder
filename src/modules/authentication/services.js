@@ -2,7 +2,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import ApiError from "../../utils/apiError.js";
-import { createUser, findUserByEmail, findUserById } from "./repository.js";
+import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+  updateUserPasswordById,
+} from "./repository.js";
 import { createToken } from "../../utils/createToken.js";
 
 export const signupService = async (data) => {
@@ -25,6 +30,25 @@ export const loginService = async ({ email, password }, next) => {
     status: "success",
     token,
     role: user.role,
+  };
+};
+
+export const updatePasswordService = async (
+  userId,
+  oldPassword,
+  newPassword
+) => {
+  const user = await findUserById(userId);
+  if (!user || !(await bcrypt.compare(oldPassword, user.password))) {
+    throw new ApiError("Invalid old password", 401);
+  }
+
+  const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+  await updateUserPasswordById(userId, hashedNewPassword);
+
+  return {
+    status: "success",
+    message: "Password updated successfully",
   };
 };
 
