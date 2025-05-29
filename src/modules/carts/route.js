@@ -48,7 +48,7 @@ cartsRouter.get(
   retrieveUserConfirmedAndWaitingCarts
 );
 
-// Get cart details by ID
+// Get pending cart details
 cartsRouter.get(
   "/pending",
   retrieveUserPendingCartDetailsLimiter,
@@ -56,23 +56,7 @@ cartsRouter.get(
   retrieveUserPendingCartDetails
 );
 
-cartsRouter.delete(
-  "/:cartId",
-  eraseCartLimiter,
-  isAuthenticated,
-  eraseCartValidator,
-  eraseCart
-);
-
-// Update cart status (for cash payments)
-cartsRouter.patch(
-  "/status/:cartId",
-  modifyCartStatusLimiter,
-  isAuthenticated,
-  modifyCartStatusValidator,
-  modifyCartStatus
-);
-
+// Delete the cart
 cartsRouter.delete(
   "/:cartId",
   eraseCartLimiter,
