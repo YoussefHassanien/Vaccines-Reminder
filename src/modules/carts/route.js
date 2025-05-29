@@ -48,7 +48,7 @@ cartsRouter.get(
   retrieveUserConfirmedAndWaitingCarts
 );
 
-// Get cart details
+// Get pending cart details
 cartsRouter.get(
   "/pending",
   retrieveUserPendingCartDetailsLimiter,
