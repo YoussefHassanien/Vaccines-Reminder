@@ -17,13 +17,6 @@ export const createCartValidator = [
     .bail()
     .escape(),
 
-  body("cart.status")
-    .optional()
-    .equals("Pending")
-    .withMessage("Status must be valid")
-    .bail()
-    .escape(),
-      
   body("cart.governorate")
     .if(body("cart.paymentType").equals("Cash"))
     .notEmpty()
@@ -167,7 +160,7 @@ export const createCartProductValidator = [
       if (!product) {
         throw new Error("Product not found");
       }
-      
+
       if (product.quantity < quantity) {
         throw new Error(
           `Insufficient inventory. Only ${product.quantity} units available.`
