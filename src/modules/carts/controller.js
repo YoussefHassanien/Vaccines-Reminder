@@ -1,6 +1,6 @@
 import {
   insertCart,
-  fetchUserCartDetails,
+  fetchUserPendingCartDetails,
   insertCartProduct,
   deleteCartProduct,
   changeCartProductQuantity,
@@ -10,6 +10,8 @@ import {
   changeCartProductsCount,
   fetchCartProductsByCartId,
   deleteCart,
+  changeCartStatus,
+  fetchUserConfirmedAndWaitingCarts,
 } from "./services.js";
 
 /**
@@ -40,10 +42,9 @@ export const createCart = async (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-export const retrieveUserCartDetails = async (req, res) => {
+export const retrieveUserPendingCartDetails = async (req, res) => {
   const user = req.user;
   const userId = user._id;
-  const { cartId } = req.params;
 
   try {
     const {
@@ -51,7 +52,7 @@ export const retrieveUserCartDetails = async (req, res) => {
       message: cartResponseMessage,
       data: cartDetails,
       error: cartResponseError,
-    } = await fetchUserCartDetails(userId, cartId);
+    } = await fetchUserPendingCartDetails(userId);
 
     if (cartResponseStatusCode !== 200) {
       return res
@@ -64,9 +65,9 @@ export const retrieveUserCartDetails = async (req, res) => {
       message: cartProductsResponseMessage,
       data: cartProductsDetails,
       error: cartProductsResponseError,
-    } = await fetchCartProductsByCartId(cartId);
+    } = await fetchCartProductsByCartId(cartDetails._id);
 
-    if (cartProductsResponseStatusCode !== 200) {
+    if (cartProductsResponseStatusCode === 500) {
       return res.status(cartProductsResponseStatusCode).json({
         message: cartProductsResponseMessage,
         error: cartProductsResponseError,
@@ -77,7 +78,8 @@ export const retrieveUserCartDetails = async (req, res) => {
       message: cartResponseMessage,
       data: {
         cart: cartDetails,
-        products: cartProductsDetails,
+        products:
+          cartProductsResponseStatusCode === 404 ? [] : cartProductsDetails,
       },
     });
   } catch (error) {
@@ -308,6 +310,49 @@ export const eraseCart = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: error.message || "Error deleting cart",
+      error: error.error,
+    });
+  }
+};
+
+export const modifyCartStatus = async (req, res) => {
+  const user = req.user;
+  const userId = user._id;
+  const { cartId } = req.params;
+
+  try {
+    const { statusCode, message, data, error } = await changeCartStatus(
+      cartId,
+      userId
+    );
+
+    return res.status(statusCode).json({ message, data, error });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || "Error updating cart status",
+      error: error.error,
+    });
+  }
+};
+
+/**
+ * Retrieves user's confirmed and waiting carts
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const retrieveUserConfirmedAndWaitingCarts = async (req, res) => {
+  const user = req.user;
+  const userId = user._id;
+
+  try {
+    const { statusCode, message, data, error } =
+      await fetchUserConfirmedAndWaitingCarts(userId);
+
+    return res.status(statusCode).json({ message, data, error });
+  } catch (error) {
+    return res.status(500).json({
+      message:
+        error.message || "Error retrieving user's confirmed and waiting carts",
       error: error.error,
     });
   }

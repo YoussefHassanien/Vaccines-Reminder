@@ -75,3 +75,25 @@ export const updateUserById = async (id, updateData) => {
     throw error;
   }
 };
+
+/**
+ * update user password by ID
+ * @param {string} id - User's ID
+ * @param {string} newPassword - New password
+ * @returns {Promise<Object|null>} Updated user document or null
+ */
+export const updateUserPasswordById = async (id, newPassword) => {
+  try {
+    return await User.findByIdAndUpdate(
+      id,
+      { password: newPassword },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+  } catch (error) {
+    console.error(`Error updating user password by ID (${id}):`, error);
+    throw error;
+  }
+};

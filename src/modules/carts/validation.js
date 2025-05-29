@@ -17,13 +17,6 @@ export const createCartValidator = [
     .bail()
     .escape(),
 
-  body("cart.status")
-    .optional()
-    .equals("Pending")
-    .withMessage("Status must be valid")
-    .bail()
-    .escape(),
-
   body("cart.governorate")
     .if(body("cart.paymentType").equals("Cash"))
     .notEmpty()
@@ -87,35 +80,6 @@ export const createCartValidator = [
 
   validatorMiddleware,
 ];
-
-/**
- * Validates cart retrieval request
- */
-export const retrieveUserCartDetailsValidator = [
-  param("cartId")
-    .notEmpty()
-    .withMessage("Cart ID is required")
-    .bail()
-    .isMongoId()
-    .withMessage("Invalid cart ID format")
-    .bail()
-    .custom(async (cartId, { req }) => {
-      // Check if cart exists and belongs to user
-      const cart = await Cart.findOne({
-        _id: cartId,
-        userId: req.user._id,
-      });
-
-      if (!cart) {
-        throw new Error("Cart not found or does not belong to you");
-      }
-
-      return true;
-    }),
-
-  validatorMiddleware,
-];
-
 /**
  * Validates cart product creation (adding product to cart)
  */
@@ -202,7 +166,6 @@ export const createCartProductValidator = [
           `Insufficient inventory. Only ${product.quantity} units available.`
         );
       }
-
       return true;
     }),
 
@@ -381,6 +344,47 @@ export const eraseCartValidator = [
       // Check if cart is in a status that allows deletion
       if (cart.status !== "Pending") {
         throw new Error(`Cannot delete cart with status: ${cart.status}`);
+      }
+
+      return true;
+    }),
+
+  validatorMiddleware,
+];
+
+/**
+ * Validates cart status modification request
+ */
+export const modifyCartStatusValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+        status: "Pending",
+        paymentType: "Cash",
+      });
+
+      if (!cart) {
+        throw new Error(
+          "Cart not found, does not belong to you, is not in 'Pending' status, or is not a cash payment cart"
+        );
+      }
+
+      // Check if cart has products
+      const cartProducts = await CartProduct.find({ cartId });
+
+      if (!cartProducts || cartProducts.length === 0) {
+        throw new Error(
+          "Cannot update status of an empty cart. Please add products first."
+        );
       }
 
       return true;
