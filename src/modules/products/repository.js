@@ -29,21 +29,12 @@ export const addNewProduct = async (productData) => {
 };
 
 /**
- * Get all products from the database with pagination
- * @param {number} cursor - id of last retreived product
- * @param {number} limit - Number of products per page
- * @returns {Promise<Object>} Products array and pagination metadata
+ * Get all products from the database
+ * @returns {Promise<Object>} Products array
  */
-export const getPaginatedProducts = async (cursor, limit) => {
+export const getAllProducts = async () => {
   try {
-    const query = cursor
-      ? { _id: { $gt: cursor } } // Fetch products with `_id` greater than the cursor
-      : {};
-
-    const products = await Product.find(query)
-      .select("-createdAt -updatedAt -__v")
-      .sort({ _id: 1 }) // Sort by `_id` in ascending order
-      .limit(limit);
+    const products = await Product.find().select("-createdAt -updatedAt -__v");
 
     return products;
   } catch (error) {

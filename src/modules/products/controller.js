@@ -2,7 +2,7 @@ import {
   getImageCloudinaryUrl,
   insertNewProduct,
   uploadToCloudinary,
-  fetchPaginatedProducts,
+  fetchAllProducts,
   changeProductQuantity,
   removeProduct,
 } from "./services.js";
@@ -49,16 +49,9 @@ export const createNewProduct = async (req, res) => {
   }
 };
 
-export const retrievePaginatedProducts = async (req, res) => {
+export const retrieveAllProducts = async (req, res) => {
   try {
-    const { cursor, limit } = req.query;
-    const { status, message, data, error } = await fetchPaginatedProducts(
-      cursor,
-      parseInt(limit, 10) || 10
-    );
-
-    // Get the last product's `_id` to use as the next cursor
-    const nextCursor = data.length > 0 ? data[data.length - 1]._id : null;
+    const { status, message, data, error } = await fetchAllProducts();
 
     return res.status(status).json({
       message,
