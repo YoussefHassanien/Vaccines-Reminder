@@ -1,7 +1,7 @@
 import {
   addCart,
   addCartProduct,
-  getUserCartDetails,
+  getUserPendingCartDetails,
   getUserById,
   getProductById,
   getCartProductsByCartId,
@@ -12,7 +12,6 @@ import {
   removeCartProduct,
   removeCart,
   updateCartStatus,
-  getUserPendingCart,
   getUserConfirmedAndWaitingCarts,
 } from "./repository.js";
 
@@ -66,19 +65,19 @@ export const insertCartProduct = async (cartProductData) => {
  * @param {String} cartId - Cart ID
  * @returns {Object} Response with status code and message
  */
-export const fetchUserCartDetails = async (userId, cartId) => {
+export const fetchUserPendingCartDetails = async (userId) => {
   try {
-    const userCart = await getUserCartDetails(userId, cartId);
+    const userCart = await getUserPendingCartDetails(userId);
     if (!userCart) {
       return {
         statusCode: 404,
-        message: `Could not find cart with ID: ${cartId} for user: ${userId}`,
+        message: `Could not find pending cart for user: ${userId}`,
       };
     }
 
     return {
       statusCode: 200,
-      message: `Cart retrieved successfully`,
+      message: `Pendingcart retrieved successfully`,
       data: userCart,
     };
   } catch (error) {
@@ -379,37 +378,6 @@ export const changeCartStatus = async (cartId, userId) => {
     return {
       statusCode: 500,
       message: "Error updating cart status",
-      error: error.message,
-    };
-  }
-};
-
-/**
- * Fetches the user's pending cart
- * @param {String} userId - User ID
- * @returns {Object} Response with status code and message
- */
-export const fetchUserPendingCart = async (userId) => {
-  try {
-    const pendingCart = await getUserPendingCart(userId);
-
-    return {
-      statusCode: 200,
-      message: "Pending cart retrieved successfully",
-      data: pendingCart,
-    };
-  } catch (error) {
-    // Handle specific error cases
-    if (error.message.includes("not found")) {
-      return {
-        statusCode: 404,
-        message: "No pending cart found for this user",
-      };
-    }
-
-    return {
-      statusCode: 500,
-      message: "Error retrieving pending cart",
       error: error.message,
     };
   }

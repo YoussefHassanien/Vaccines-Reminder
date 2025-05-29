@@ -20,7 +20,7 @@ export const createCartLimiter = rateLimit({
  * Rate limiter for retrieving cart details
  * Allows more frequent reads with 60 requests per minute
  */
-export const retrieveUserCartDetailsLimiter = rateLimit({
+export const retrieveUserPendingCartDetailsLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 60, // 60 requests per minute
   message: {
@@ -112,23 +112,6 @@ export const modifyCartStatusLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  skipSuccessfulRequests: false,
-});
-
-/**
- * Rate limiter for retrieving user pending cart
- * Allows frequent reads with 100 requests per minute
- * Higher limit since this is a common operation for checking cart status
- */
-export const retrieveUserPendingCartLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute
-  message: {
-    message:
-      "Too many pending cart retrieval attempts. Please try again after a minute.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
   skipSuccessfulRequests: false,
 });
 
