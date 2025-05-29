@@ -21,6 +21,7 @@ const cartSchema = new mongoose.Schema(
     totalPrice: {
       type: Number,
       required: [true, "Total price of the cart must be provided"],
+      min: [0, "Total Price can't be negative"],
       default: 0,
     },
     status: {
