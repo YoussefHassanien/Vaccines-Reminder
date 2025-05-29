@@ -29,7 +29,6 @@ export const addCartProduct = async (cartProductData) => {
   }
 };
 
-
 /**
  * Removes a product from a cart and updates the cart totals
  * @param {String} cartProductId - MongoDB ObjectId of the cart product to remove
@@ -91,10 +90,10 @@ export const addCart = async (cartData) => {
  * @param {String} cartId - MongoDB ObjectId of the cart
  * @returns {Promise<Object|null>} The cart or null if not found
  */
-export const getUserCartDetails = async (userId, cartId) => {
+export const getUserPendingCartDetails = async (userId) => {
   try {
     // Find carts for this user
-    const cart = await Cart.findOne({ userId, status: "Pending", _id: cartId })
+    const cart = await Cart.findOne({ userId, status: "Pending" })
       .select("-__v -updatedAt -createdAt")
       .lean();
 
@@ -424,21 +423,6 @@ export const updateCartStatus = async (cartId, userId) => {
       `Error updating status of cart with user id: ${userId} and cart id: ${cartId}`,
       error
     );
-    throw error;
-  }
-};
-
-export const getUserPendingCart = async (userId) => {
-  try {
-    const cart = await Cart.findOne({ userId, status: "Pending" });
-
-    if (!cart) {
-      throw new Error(`Pending cart with user id: ${userId} not found`);
-    }
-
-    return formatMongoDbObjects(cart);
-  } catch (error) {
-    console.error(error);
     throw error;
   }
 };

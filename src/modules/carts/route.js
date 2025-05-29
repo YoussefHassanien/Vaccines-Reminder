@@ -1,18 +1,16 @@
 import express from "express";
 import {
   createCart,
-  retrieveUserCartDetails,
+  retrieveUserPendingCartDetails,
   createCartProduct,
   eraseCartProduct,
   modifyCartProductQuantity,
   eraseCart,
   modifyCartStatus,
-  retrieveUserPendingCart,
   retrieveUserConfirmedAndWaitingCarts,
 } from "./controller.js";
 import {
   createCartValidator,
-  retrieveUserCartDetailsValidator,
   createCartProductValidator,
   eraseCartProductValidator,
   modifyCartProductQuantityValidator,
@@ -21,13 +19,12 @@ import {
 } from "./validation.js";
 import {
   createCartLimiter,
-  retrieveUserCartDetailsLimiter,
+  retrieveUserPendingCartDetailsLimiter,
   createCartProductLimiter,
   eraseCartProductLimiter,
   modifyCartProductQuantityLimiter,
   eraseCartLimiter,
   modifyCartStatusLimiter,
-  retrieveUserPendingCartLimiter,
   retrieveUserConfirmedAndWaitingCartsLimiter,
 } from "./rateLimiter.js";
 import { isAuthenticated } from "../../middlewares/authentication.js";
@@ -43,14 +40,6 @@ cartsRouter.post(
   createCart
 );
 
-// Get user's pending cart
-cartsRouter.get(
-  "/pending",
-  retrieveUserPendingCartLimiter,
-  isAuthenticated,
-  retrieveUserPendingCart
-);
-
 // Get user's confirmed and waiting carts
 cartsRouter.get(
   "/my-orders",
@@ -61,11 +50,10 @@ cartsRouter.get(
 
 // Get cart details by ID
 cartsRouter.get(
-  "/:cartId",
-  retrieveUserCartDetailsLimiter,
+  "/pending",
+  retrieveUserPendingCartDetailsLimiter,
   isAuthenticated,
-  retrieveUserCartDetailsValidator,
-  retrieveUserCartDetails
+  retrieveUserPendingCartDetails
 );
 
 cartsRouter.delete(
@@ -111,6 +99,5 @@ cartsRouter.patch(
   modifyCartProductQuantityValidator,
   modifyCartProductQuantity
 );
-
 
 export default cartsRouter;

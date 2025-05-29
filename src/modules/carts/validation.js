@@ -23,7 +23,7 @@ export const createCartValidator = [
     .withMessage("Status must be valid")
     .bail()
     .escape(),
-      
+
   body("cart.governorate")
     .if(body("cart.paymentType").equals("Cash"))
     .notEmpty()
@@ -84,33 +84,6 @@ export const createCartValidator = [
     }
     return true;
   }),
-
-  validatorMiddleware,
-];
-/**
- * Validates cart retrieval request
- */
-export const retrieveUserCartDetailsValidator = [
-  param("cartId")
-    .notEmpty()
-    .withMessage("Cart ID is required")
-    .bail()
-    .isMongoId()
-    .withMessage("Invalid cart ID format")
-    .bail()
-    .custom(async (cartId, { req }) => {
-      // Check if cart exists and belongs to user
-      const cart = await Cart.findOne({
-        _id: cartId,
-        userId: req.user._id,
-      });
-
-      if (!cart) {
-        throw new Error("Cart not found or does not belong to you");
-      }
-
-      return true;
-    }),
 
   validatorMiddleware,
 ];
@@ -195,7 +168,7 @@ export const createCartProductValidator = [
       if (!product) {
         throw new Error("Product not found");
       }
-      
+
       if (product.quantity < quantity) {
         throw new Error(
           `Insufficient inventory. Only ${product.quantity} units available.`
