@@ -1,6 +1,7 @@
 import { body } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 import Provider from "../../models/providerModel.js";
+import Vaccine from "../../models/vaccineModel.js";
 
 /**
  * Validates vaccine creation request
@@ -78,6 +79,33 @@ export const createVaccineValidator = [
 
       if (!provider) {
         throw new Error("Provider not found");
+      }
+
+      return true;
+    }),
+
+  validatorMiddleware,
+];
+
+import { param } from "express-validator";
+
+/**
+ * Validates vaccine deletion request
+ */
+export const deleteVaccineValidator = [
+  param("vaccineId")
+    .notEmpty()
+    .withMessage("Vaccine ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid vaccine ID format")
+    .bail()
+    .custom(async (vaccineId) => {
+      // Check if vaccine exists
+      const vaccine = await Vaccine.findById(vaccineId);
+
+      if (!vaccine) {
+        throw new Error("Vaccine not found");
       }
 
       return true;

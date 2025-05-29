@@ -73,6 +73,23 @@ cartsRouter.patch(
   modifyCartStatus
 );
 
+cartsRouter.delete(
+  "/:cartId",
+  eraseCartLimiter,
+  isAuthenticated,
+  eraseCartValidator,
+  eraseCart
+);
+
+// Update cart status (for cash payments)
+cartsRouter.patch(
+  "/status/:cartId",
+  modifyCartStatusLimiter,
+  isAuthenticated,
+  modifyCartStatusValidator,
+  modifyCartStatus
+);
+
 // Add product to cart
 cartsRouter.post(
   "/:cartId/products",
