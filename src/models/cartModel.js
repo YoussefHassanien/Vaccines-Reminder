@@ -21,11 +21,12 @@ const cartSchema = new mongoose.Schema(
     totalPrice: {
       type: Number,
       required: [true, "Total price of the cart must be provided"],
+      min: [0, "Total Price can't be negative"],
       default: 0,
     },
     status: {
       type: String,
-      enum: ["Pending", "Confirmed", "Waiting for cash payment"],
+      enum: ["Pending", "Online paid", "Waiting for cash payment, Delivered"],
       default: "Pending",
       required: [true, "Cart status must be specified"],
     },

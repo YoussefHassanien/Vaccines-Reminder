@@ -1,4 +1,4 @@
-import { body, query, param } from "express-validator";
+import { body, param } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 
 /**
@@ -118,31 +118,6 @@ export const createProductValidator = [
     .withMessage("Required age must be between 5 and 30 characters")
     .bail()
     .escape(),
-
-  validatorMiddleware,
-];
-
-/**
- * Pagination validation middleware
- *
- * Validates and sanitizes pagination query parameters:
- * - cursor: optional, string, valid MongoDB ObjectId
- * - limit: optional, integer, minimum value 1, maximum value 100
- *
- * Returns 400 error with validation details if validation fails
- */
-export const getPaginatedProductsValidator = [
-  // Cursor validation
-  query("cursor")
-    .optional()
-    .isMongoId()
-    .withMessage("Cursor must be a valid MongoDB ObjectId"),
-
-  // Limit validation
-  query("limit")
-    .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage("Limit must be a positive integer between 1 and 100"),
 
   validatorMiddleware,
 ];
