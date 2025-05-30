@@ -62,16 +62,14 @@ export const updateUserCartStatus = async (userId, cartId) => {
       );
       return false;
     }
-    if (userCart.status === "Pending") {
-      userCart.paymentType === "Online"
-        ? (userCart.status = "Confirmed")
-        : (userCart.status = "Waiting for cash payment");
+    if (userCart.status === "Pending" && userCart.paymentType === "Online") {
+      userCart.status = "Online Paid";
       await userCart.save();
       const formattedUserCart = formatMongoDbObjects(userCart);
       return formattedUserCart;
     }
     console.log(
-      `User cart of user id: ${userId} and cart id: ${cartId} status is not Pending!`
+      `User cart of user id: ${userId} and cart id: ${cartId} status is not pending or not an online payment cart`
     );
     return false;
   } catch (error) {

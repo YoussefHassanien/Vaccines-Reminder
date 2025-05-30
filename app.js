@@ -17,6 +17,7 @@ import providerRoute from "./src/modules/providers/route.js";
 import vaccinesRouter from "./src/modules/vaccines/route.js";
 import vaccineRequestsRouter from "./src/modules/vaccines-requests/route.js";
 import complaintsRouter from "./src/modules/complaints/route.js";
+import productsReviewsRouter from "./src/modules/products-reviews/route.js";
 
 const app = express();
 
@@ -53,5 +54,6 @@ app.use("/api/provider", providerRoute);
 app.use("/api/vaccines", vaccinesRouter);
 app.use("/api/vaccine-requests", vaccineRequestsRouter);
 app.use("/api/complaints", complaintsRouter);
+app.use("/api/products-reviews", productsReviewsRouter);
 
 export default app;

@@ -36,8 +36,8 @@ productReviewSchema.index({ userId: 1, productId: 1 }, { unique: true });
 // This helps with queries that filter by productId and sort by _id (creation order)
 productReviewSchema.index({ productId: 1, _id: 1 });
 
-// Custom error message for duplicate review
-productReviewSchema.post("save", function (error, next) {
+// Handle duplicate review error
+productReviewSchema.post("save", function (error, doc, next) {
   if (error.name === "MongoServerError" && error.code === 11000) {
     next(new Error("You have already reviewed this product"));
   } else {
