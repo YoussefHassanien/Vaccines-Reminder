@@ -56,11 +56,10 @@ export const retrieveAllProducts = async (req, res) => {
     return res.status(status).json({
       message,
       data,
-      nextCursor,
       error,
     });
   } catch (error) {
-    return res.status(500).json({
+    return res.status(error.statusCode).json({
       message: error.message,
       error: error.error,
     });

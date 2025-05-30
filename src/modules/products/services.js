@@ -83,19 +83,20 @@ export const insertNewProduct = async (productData) => {
 export const fetchAllProducts = async () => {
   try {
     const products = await getAllProducts();
-    if (!products) {
-      return {
-        status: 500,
-        message: "Error getting all products",
-      };
-    }
     return {
       status: 200,
       message: "Products are successfully retrieved",
       data: products,
     };
   } catch (error) {
-    return {
+    if (error.message === "No products found ") {
+      throw {
+        statusCode: 404,
+        message: "No products found",
+      };
+    }
+    throw {
+      statusCode: 500,
       message: "Error getting all products",
       error: error.message,
     };
