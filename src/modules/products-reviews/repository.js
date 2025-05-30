@@ -232,3 +232,23 @@ export const getUserDeliveredCartsProducts = async (deliveredCartsIds) => {
     throw error;
   }
 };
+
+/**
+ * Get a product review by its ID
+ * @param {String} reviewId - MongoDB ObjectId of the review
+ * @returns {Promise<Object>} Product review document
+ */
+export const getProductReviewById = async (reviewId) => {
+  try {
+    const review = await ProductReview.findById(reviewId);
+
+    if (!review) {
+      throw new Error(`Product review with id: ${reviewId} not found`);
+    }
+
+    return formatMongoDbObjects(review);
+  } catch (error) {
+    console.error(`Error finding review with ID ${reviewId}:`, error);
+    throw error;
+  }
+};

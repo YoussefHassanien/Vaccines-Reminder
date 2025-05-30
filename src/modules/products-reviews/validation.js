@@ -4,6 +4,7 @@ import {
   didUserReviewProduct,
   fetchUserDeliveredCarts,
   fetchUserDeliveredCartsProducts,
+  fetchProductReviewById,
 } from "./services.js";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 
@@ -91,6 +92,28 @@ export const createProductReviewValidator = [
     .withMessage("Rating must be an integer between 1 and 5")
     .toInt(),
 
+  // Handle validation errors
+  validatorMiddleware,
+];
+
+export const eraseProductReviewValidator = [
+  // Validate reviewId parameter
+  param("reviewId")
+    .isMongoId()
+    .withMessage("Invalid review ID format")
+    .custom(async (reviewId, { req }) => {
+      try {
+        // Check if product review exists
+        const productReview = await fetchProductReviewById(reviewId);
+
+        // Attach product review to the request
+        req.review = productReview;
+
+        return true;
+      } catch (error) {
+        throw new Error(error.message);
+      }
+    }),
   // Handle validation errors
   validatorMiddleware,
 ];

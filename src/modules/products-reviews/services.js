@@ -7,6 +7,7 @@ import {
   getProductById,
   getUserDeliveredCarts,
   getUserDeliveredCartsProducts,
+  getProductReviewById,
 } from "./repository.js";
 
 export const insertNewProductReview = async (reviewDetails) => {
@@ -159,6 +160,26 @@ export const fetchUserDeliveredCartsProducts = async (deliveredCartsIds) => {
     throw {
       statusCode: 500,
       message: "Error retrieving products from delivered carts",
+      error: error.message,
+    };
+  }
+};
+
+export const fetchProductReviewById = async (reviewId) => {
+  try {
+    const review = await getProductReviewById(reviewId);
+
+    return review;
+  } catch (error) {
+    if (error.message.includes("not found")) {
+      throw {
+        statusCode: 404,
+        message: error.message,
+      };
+    }
+    throw {
+      statusCode: 500,
+      message: "Error retrieving product review",
       error: error.message,
     };
   }

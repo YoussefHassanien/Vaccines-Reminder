@@ -36,6 +36,11 @@ export const calculateAverage = (oldAverage, totalCount, newValue) => {
     newCount = totalCount + 1;
   }
 
+  // Handle edge case when all reviews are deleted
+  if (newCount === 0) {
+    return 0;
+  }
+
   // Calculate and new average
   newAverage = newTotal / newCount;
 
