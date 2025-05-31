@@ -452,3 +452,25 @@ export const getUserConfirmedAndWaitingCarts = async (userId) => {
     throw error;
   }
 };
+
+export const adminUpdateCartStatus = async (cartId, status) => {
+  try {
+    const cart = await Cart.findByIdAndUpdate(
+      cartId,
+      { status: status },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-__v");
+
+    if (!cart) {
+      throw new Error(`Cart with id: ${cartId} not found`);
+    }
+
+    return cart;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};

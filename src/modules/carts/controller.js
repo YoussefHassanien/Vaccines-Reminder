@@ -12,6 +12,7 @@ import {
   deleteCart,
   changeCartStatus,
   fetchUserConfirmedAndWaitingCarts,
+  adminChangeCartStatus,
 } from "./services.js";
 
 /**
@@ -404,6 +405,28 @@ export const retrieveUserConfirmedAndWaitingCarts = async (req, res) => {
     return res.status(500).json({
       message:
         error.message || "Error retrieving user's confirmed and waiting carts",
+      error: error.error,
+    });
+  }
+};
+
+export const adminModifyCartStatus = async (req, res) => {
+  const { cartId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const { statusCode, message, data } = await adminChangeCartStatus(
+      cartId,
+      status
+    );
+
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
       error: error.error,
     });
   }

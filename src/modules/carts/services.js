@@ -13,6 +13,7 @@ import {
   removeCart,
   updateCartStatus,
   getUserConfirmedAndWaitingCarts,
+  adminUpdateCartStatus,
 } from "./repository.js";
 
 /**
@@ -411,6 +412,32 @@ export const fetchUserConfirmedAndWaitingCarts = async (userId) => {
       statusCode: 500,
       message:
         "Error retrieving user's confirmed and waiting for cash payment carts",
+      error: error.message,
+    };
+  }
+};
+
+export const adminChangeCartStatus = async (cartId, status) => {
+  try {
+    const updatedCart = await adminUpdateCartStatus(cartId, status);
+
+    return {
+      statusCode: 200,
+      message: `Cart status is updated successfully`,
+      data: {
+        cart: updatedCart,
+      },
+    };
+  } catch (error) {
+    if (error.message.includes("not found")) {
+      throw {
+        statusCode: 404,
+        message: `Cart of id: ${cartId} not found`,
+      };
+    }
+    throw {
+      statusCode: 500,
+      message: "Error updating cart status",
       error: error.message,
     };
   }

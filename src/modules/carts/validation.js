@@ -392,3 +392,41 @@ export const modifyCartStatusValidator = [
 
   validatorMiddleware,
 ];
+
+/**
+ * Validates admin cart status modification request
+ */
+export const adminModifyCartStatusValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+      });
+
+      if (!cart) {
+        throw new Error("Cart not found");
+      }
+
+      return true;
+    }),
+
+  body("status")
+    .notEmpty()
+    .withMessage("Status is required")
+    .bail()
+    .isIn(["Pending", "Online paid", "Waiting for cash payment", "Delivered"])
+    .withMessage(
+      "Status value is not valid, Status value can only be: Pending, Online paid, Waiting for cash payment, Delivered"
+    )
+    .bail()
+    .escape(),
+
+  validatorMiddleware,
+];
