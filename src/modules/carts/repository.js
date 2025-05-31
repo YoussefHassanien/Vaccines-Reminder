@@ -442,7 +442,7 @@ export const getUserConfirmedAndWaitingCarts = async (userId) => {
       .sort({ updatedAt: -1 })
       .select("-__v -createdAt -updatedAt") // Exclude unwanted fields
       .lean(); // Get plain objects
-    
+
     return carts || []; // Return empty array if no carts found
   } catch (error) {
     console.error(
