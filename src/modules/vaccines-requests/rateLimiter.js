@@ -33,3 +33,20 @@ export const retrieveVaccineRequestsLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: false,
 });
+
+/**
+ * Rate limiter for retrieving user vaccine requests
+ * Restricts to 20 requests per minute
+ * This is an administrative endpoint, so we limit access to prevent excessive load
+ */
+export const retrieveUserVaccineRequestsLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // 20 requests per minute
+  message: {
+    message:
+      "Too many user vaccine request retrieval attempts. Please try again after a minute.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false,
+});
