@@ -403,8 +403,8 @@ export const fetchUserConfirmedAndWaitingCarts = async (userId) => {
     return {
       statusCode: 200,
       message:
-        "User's confirmed and waiting for cash payment carts retrieved successfully",
-      data: carts,
+        "User's confirmed, waiting for cash payment and delivered carts retrieved successfully",
+      data: { carts },
     };
   } catch (error) {
     return {
