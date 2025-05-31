@@ -133,3 +133,20 @@ export const retrieveUserConfirmedAndWaitingCartsLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * Rate limiter for admin cart status modification
+ * Restricts admin to 50 status updates per 5 mins
+ * This prevents abuse of cart status changes
+ */
+export const adminModifyCartStatusLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 mins
+  max: 50, // 50 requests per 5 mins
+  message: {
+    message:
+      "Too many cart status update attempts. Please try again after 5 mins.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false,
+});

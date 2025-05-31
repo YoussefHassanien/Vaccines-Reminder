@@ -12,6 +12,7 @@ import {
   deleteCart,
   changeCartStatus,
   fetchUserConfirmedAndWaitingCarts,
+  adminChangeCartStatus,
 } from "./services.js";
 
 /**
@@ -336,7 +337,7 @@ export const modifyCartStatus = async (req, res) => {
 };
 
 /**
- * Retrieves user's confirmed and waiting carts
+ * Retrieves user's confirmed and waiting carts with their products
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
@@ -348,11 +349,84 @@ export const retrieveUserConfirmedAndWaitingCarts = async (req, res) => {
     const { statusCode, message, data, error } =
       await fetchUserConfirmedAndWaitingCarts(userId);
 
-    return res.status(statusCode).json({ message, data, error });
+    // If the request was not successful, return early
+    if (statusCode !== 200) {
+      return res.status(statusCode).json({ message, data, error });
+    }
+
+    // Check if we have carts to process
+    if (!data?.carts || data.carts.length === 0) {
+      return res.status(statusCode).json({ message, data, error });
+    }
+
+    // Attach products to each cart
+    const cartsWithProducts = await Promise.all(
+      data.carts.map(async (cart) => {
+        try {
+          const {
+            statusCode: cartProductsStatusCode,
+            message: cartProductsMessage,
+            data: cartProducts,
+            error: cartProductsError,
+          } = await fetchCartProductsByCartId(cart._id);
+
+          // Attach products to cart based on the response
+          return {
+            ...cart,
+            products: cartProductsStatusCode === 200 ? cartProducts : [],
+            productsCount:
+              cartProductsStatusCode === 200 ? cartProducts.length : 0,
+          };
+        } catch (productError) {
+          console.warn(
+            `Failed to fetch products for cart ${cart._id}:`,
+            productError
+          );
+          // Return cart with empty products array if fetching fails
+          return {
+            ...cart,
+            products: [],
+            productsCount: 0,
+          };
+        }
+      })
+    );
+
+    // Return the enhanced data with products attached to each cart
+    return res.status(statusCode).json({
+      message,
+      data: {
+        ...data,
+        carts: cartsWithProducts,
+      },
+      error,
+    });
   } catch (error) {
     return res.status(500).json({
       message:
         error.message || "Error retrieving user's confirmed and waiting carts",
+      error: error.error,
+    });
+  }
+};
+
+export const adminModifyCartStatus = async (req, res) => {
+  const { cartId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const { statusCode, message, data } = await adminChangeCartStatus(
+      cartId,
+      status
+    );
+
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
       error: error.error,
     });
   }
