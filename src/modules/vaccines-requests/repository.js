@@ -35,3 +35,45 @@ export const getAllVaccineRequests = async () => {
     throw error;
   }
 };
+
+export const getUserVaccineRequests = async (userId) => {
+  try {
+    const vaccineRequests = await VaccineRequest.find({ parentId: userId })
+      .select(
+        "status vaccinationDate governorate city street nurseId vaccineId"
+      )
+      .populate({
+        path: "vaccineId",
+        select: "name",
+      })
+      .populate({
+        path: "nurseId",
+        select: "hospitalName fName lName",
+        model: "Nurse",
+      });
+
+    if (!vaccineRequests || vaccineRequests.length === 0) {
+      throw new Error(`Vaccine requests for user with id: ${userId} not found`);
+    }
+
+    const formattedVaccineRequests = vaccineRequests.map((vr) => {
+      const vrObject = vr.toObject();
+
+      return {
+        _id: vrObject._id,
+        status: vrObject.status,
+        vaccinationDate: vrObject.vaccinationDate,
+        governorate: vrObject.governorate,
+        city: vrObject.city,
+        street: vrObject.street,
+        vaccine: vrObject.vaccineId,
+        nurse: vrObject.nurseId,
+      };
+    });
+
+    return formattedVaccineRequests;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};

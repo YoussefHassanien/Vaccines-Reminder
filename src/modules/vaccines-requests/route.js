@@ -3,8 +3,13 @@ const vaccineRequestsRouter = Router();
 import {
   createVaccineRequestLimiter,
   retrieveVaccineRequestsLimiter,
+  retrieveUserVaccineRequestsLimiter,
 } from "./rateLimiter.js";
-import { createVaccineRequest, retrieveVaccineRequests } from "./controller.js";
+import {
+  createVaccineRequest,
+  retrieveVaccineRequests,
+  retrieveUserVaccineRequests,
+} from "./controller.js";
 import { createVaccineRequestValidator } from "./validation.js";
 import {
   isAuthenticated,
@@ -17,6 +22,13 @@ vaccineRequestsRouter.post(
   isAuthenticated,
   createVaccineRequestValidator,
   createVaccineRequest
+);
+
+vaccineRequestsRouter.get(
+  "/",
+  retrieveUserVaccineRequestsLimiter,
+  isAuthenticated,
+  retrieveUserVaccineRequests
 );
 
 vaccineRequestsRouter.get(
