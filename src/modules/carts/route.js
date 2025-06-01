@@ -8,6 +8,7 @@ import {
   eraseCart,
   modifyCartStatus,
   retrieveUserConfirmedAndWaitingCarts,
+  adminModifyCartStatus,
 } from "./controller.js";
 import {
   createCartValidator,
@@ -16,6 +17,7 @@ import {
   modifyCartProductQuantityValidator,
   eraseCartValidator,
   modifyCartStatusValidator,
+  adminModifyCartStatusValidator,
 } from "./validation.js";
 import {
   createCartLimiter,
@@ -26,8 +28,12 @@ import {
   eraseCartLimiter,
   modifyCartStatusLimiter,
   retrieveUserConfirmedAndWaitingCartsLimiter,
+  adminModifyCartStatusLimiter,
 } from "./rateLimiter.js";
-import { isAuthenticated } from "../../middlewares/authentication.js";
+import {
+  isAuthenticated,
+  isAuthorized,
+} from "../../middlewares/authentication.js";
 
 const cartsRouter = express.Router();
 
@@ -72,6 +78,15 @@ cartsRouter.patch(
   isAuthenticated,
   modifyCartStatusValidator,
   modifyCartStatus
+);
+
+cartsRouter.patch(
+  "/status/admin/:cartId",
+  adminModifyCartStatusLimiter,
+  isAuthenticated,
+  isAuthorized,
+  adminModifyCartStatusValidator,
+  adminModifyCartStatus
 );
 
 // Add product to cart

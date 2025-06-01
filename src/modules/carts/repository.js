@@ -437,18 +437,40 @@ export const getUserConfirmedAndWaitingCarts = async (userId) => {
     // Get user's carts with "Confirmed" or "Waiting for cash payment" status
     const carts = await Cart.find({
       userId,
-      status: { $in: ["Confirmed", "Waiting for cash payment"] },
+      status: { $in: ["Confirmed", "Waiting for cash payment", "Delivered"] },
     })
       .sort({ updatedAt: -1 })
       .select("-__v -createdAt -updatedAt") // Exclude unwanted fields
       .lean(); // Get plain objects
-    
+
     return carts || []; // Return empty array if no carts found
   } catch (error) {
     console.error(
       `Error fetching confirmed and waiting carts for user id: ${userId}`,
       error
     );
+    throw error;
+  }
+};
+
+export const adminUpdateCartStatus = async (cartId, status) => {
+  try {
+    const cart = await Cart.findByIdAndUpdate(
+      cartId,
+      { status: status },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-__v");
+
+    if (!cart) {
+      throw new Error(`Cart with id: ${cartId} not found`);
+    }
+
+    return cart;
+  } catch (error) {
+    console.error(error);
     throw error;
   }
 };

@@ -26,7 +26,7 @@ const cartSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Online paid", "Waiting for cash payment, Delivered"],
+      enum: ["Pending", "Online paid", "Waiting for cash payment", "Delivered"],
       default: "Pending",
       required: [true, "Cart status must be specified"],
     },
