@@ -63,7 +63,7 @@ export const updateUserCartStatus = async (userId, cartId) => {
       return false;
     }
     if (userCart.status === "Pending" && userCart.paymentType === "Online") {
-      userCart.status = "Online Paid";
+      userCart.status = "Online paid";
       await userCart.save();
       const formattedUserCart = formatMongoDbObjects(userCart);
       return formattedUserCart;
