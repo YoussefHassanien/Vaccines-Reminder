@@ -3816,107 +3816,7 @@ paths:
                     example: "Error deleting cart"
                   error:
                     type: string
-                    example: "Server error"
-      security:
-        - BearerAuth: []
-
-  /api/payment/send-otp/{cartid}:
-    get:
-      tags:
-        - Payment
-      summary: Send payment verification OTP
-      description: >
-        Sends a one-time password to the user's registered phone number for payment verification.
-        OTPs are valid for 2 minutes and rate-limited to 3 requests every 5 minutes.
-      parameters:
-        - in: path
-          name: cartId
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: MongoDB ObjectId of the cart
-          example: "60d21b4667d0d8992e610c87"
-      responses:
-        "201":
-          description: OTP sent successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Otp is successfully sent to phone number: +201012345678"
-                  data:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Baby-Guard payment verification code is: 105582. For your security, do not share this code. This OTP will expire in 2 minutes!"
-                  error:
-                    type: object
-                    nullable: true
-        "400":
-          description: Invalid input or validation failed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Validation failed"
-                  errors:
-                    type: object
-                    properties:
-                      cartId:
-                        type: object
-                        properties:
-                          msg:
-                            type: string
-                            example: "Cart not found or does not belong to you"
-                          param:
-                            type: string
-                            example: "cartId"
-                          location:
-                            type: string
-                            example: "body"
-        "403":
-          description: Cart not eligible for OTP
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Cannot send OTP for cart with status: Confirmed"
-                  errors:
-                    type: object
-        "429":
-          description: Too many OTP requests
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Too many OTP requests. Please try again after 5 minutes."
-        "500":
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error sending otp"
-                  error:
-                    type: string
-                    example: "Failed to send SMS: Invalid phone number format"
+                    example: "Server error"      
       security:
         - BearerAuth: []
 
@@ -4447,10 +4347,112 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error during authentication"
+                    example: "Error during authentication"                  
                   error:
                     type: string
                     example: "Internal server error"
+
+  /api/auth/updatePassword:
+    put:
+      tags:
+        - Authentication
+      summary: Update user password
+      description: >
+        Updates the password for the authenticated user.
+        Requires the current password for verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - oldPassword
+                - newPassword
+                - passwordConfirm
+              properties:
+                oldPassword:
+                  type: string
+                  format: password
+                  description: Current password (minimum 6 characters)
+                  example: "currentPassword123"
+                newPassword:
+                  type: string
+                  format: password
+                  description: New password (minimum 6 characters)
+                  example: "newSecurePassword456"
+                passwordConfirm:
+                  type: string
+                  format: password
+                  description: Confirm new password (must match newPassword)
+                  example: "newSecurePassword456"
+      responses:
+        "200":
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Password updated successfully"
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      oldPassword:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "old password is required"
+                          param:
+                            type: string
+                            example: "oldPassword"
+                          location:
+                            type: string
+                            example: "body"
+        "401":
+          description: Invalid current password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Invalid current password"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating password"
+                  error:
+                    type: string
+                    example: "Internal server error"
+      security:
+        - BearerAuth: []
 
   /api/vaccines/admin:
     post:
@@ -5092,6 +5094,70 @@ paths:
                   message:
                     type: string
                     example: "Error inserting vaccine request"
+                  error:
+                    type: string
+                    example: "Server error"      
+      security:
+        - BearerAuth: []
+
+    get:
+      tags:
+        - Vaccine Requests
+      summary: Get user's vaccine requests
+      description: >
+        Retrieve all vaccine requests created by the authenticated user.
+        Returns requests for all children belonging to the parent.
+      responses:
+        "200":
+          description: User vaccine requests retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User vaccine requests retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/VaccineRequest"
+                  error:
+                    type: object
+                    nullable: true
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many vaccine request retrieval attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching user vaccine requests"
                   error:
                     type: string
                     example: "Server error"
@@ -7142,9 +7208,11 @@ components:
         createdAt:
           type: string
           format: date-time
-          example: "2025-05-13T10:15:30Z"        updatedAt:
+          example: "2025-05-13T10:15:30Z"        
+          updatedAt:
           type: string
-          format: date-time          example: "2025-05-13T10:15:30Z"
+          format: date-time          
+          example: "2025-05-13T10:15:30Z"
 
     Provider:
       type: object
@@ -7295,7 +7363,8 @@ components:
             _id: "60d21b4667d0d8992e610c92"
             userId: "60d21b4667d0d8992e610c85"
             message: "It would be great if you could add a mobile app for easier access to vaccination schedules and reminders."
-            type: "Suggestion"            createdAt: "2025-05-27T09:15:30Z"
+            type: "Suggestion"           
+            createdAt: "2025-05-27T09:15:30Z"
             updatedAt: "2025-05-27T09:15:30Z"
 
     Product:
@@ -7922,7 +7991,8 @@ components:
           description: "A slot that has been assigned to a vaccine request"
           value:
             _id: "6839c1a2c7522462a378f7de"
-            nurseId: "60d21b4667d0d8992e610c85"            date: "2025-05-30"
+            nurseId: "60d21b4667d0d8992e610c85"           
+            date: "2025-05-30"
             startTime: "10:00"
             endTime: "11:00"
             isBooked: true
