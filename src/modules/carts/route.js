@@ -1,29 +1,39 @@
 import express from "express";
 import {
   createCart,
-  retrieveUserCartDetails,
+  retrieveUserPendingCartDetails,
   createCartProduct,
   eraseCartProduct,
   modifyCartProductQuantity,
   eraseCart,
+  modifyCartStatus,
+  retrieveUserConfirmedAndWaitingCarts,
+  adminModifyCartStatus,
 } from "./controller.js";
 import {
   createCartValidator,
-  retrieveUserCartDetailsValidator,
   createCartProductValidator,
   eraseCartProductValidator,
   modifyCartProductQuantityValidator,
   eraseCartValidator,
+  modifyCartStatusValidator,
+  adminModifyCartStatusValidator,
 } from "./validation.js";
 import {
   createCartLimiter,
-  retrieveUserCartDetailsLimiter,
+  retrieveUserPendingCartDetailsLimiter,
   createCartProductLimiter,
   eraseCartProductLimiter,
   modifyCartProductQuantityLimiter,
   eraseCartLimiter,
+  modifyCartStatusLimiter,
+  retrieveUserConfirmedAndWaitingCartsLimiter,
+  adminModifyCartStatusLimiter,
 } from "./rateLimiter.js";
-import { isAuthenticated } from "../../middlewares/authentication.js";
+import {
+  isAuthenticated,
+  isAuthorized,
+} from "../../middlewares/authentication.js";
 
 const cartsRouter = express.Router();
 
@@ -36,13 +46,47 @@ cartsRouter.post(
   createCart
 );
 
-// Get cart details by ID
+// Get user's confirmed and waiting carts
 cartsRouter.get(
-  "/:cartId",
-  retrieveUserCartDetailsLimiter,
+  "/my-orders",
+  retrieveUserConfirmedAndWaitingCartsLimiter,
   isAuthenticated,
-  retrieveUserCartDetailsValidator,
-  retrieveUserCartDetails
+  retrieveUserConfirmedAndWaitingCarts
+);
+
+// Get pending cart details
+cartsRouter.get(
+  "/pending",
+  retrieveUserPendingCartDetailsLimiter,
+  isAuthenticated,
+  retrieveUserPendingCartDetails
+);
+
+// Delete the cart
+cartsRouter.delete(
+  "/:cartId",
+  eraseCartLimiter,
+  isAuthenticated,
+  eraseCartValidator,
+  eraseCart
+);
+
+// Update cart status (for cash payments)
+cartsRouter.patch(
+  "/status/:cartId",
+  modifyCartStatusLimiter,
+  isAuthenticated,
+  modifyCartStatusValidator,
+  modifyCartStatus
+);
+
+cartsRouter.patch(
+  "/status/admin/:cartId",
+  adminModifyCartStatusLimiter,
+  isAuthenticated,
+  isAuthorized,
+  adminModifyCartStatusValidator,
+  adminModifyCartStatus
 );
 
 // Add product to cart
@@ -70,15 +114,6 @@ cartsRouter.patch(
   isAuthenticated,
   modifyCartProductQuantityValidator,
   modifyCartProductQuantity
-);
-
-// Delete entire cart
-cartsRouter.delete(
-  "/:cartId",
-  eraseCartLimiter,
-  isAuthenticated,
-  eraseCartValidator,
-  eraseCart
 );
 
 export default cartsRouter;

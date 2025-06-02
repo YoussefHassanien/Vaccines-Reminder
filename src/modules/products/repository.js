@@ -29,25 +29,60 @@ export const addNewProduct = async (productData) => {
 };
 
 /**
- * Get all products from the database with pagination
- * @param {number} cursor - id of last retreived product
- * @param {number} limit - Number of products per page
- * @returns {Promise<Object>} Products array and pagination metadata
+ * Get all products from the database with their reviews and user details
+ * @param {Object} options - Query options
+ * @param {number} options.limit - Limit number of products (optional)
+ * @param {number} options.skip - Skip number of products for pagination (optional)
+ * @param {Object} options.sort - Sort criteria (optional, default: { createdAt: -1 })
+ * @returns {Promise<Array>} Array of products with populated reviews
  */
-export const getPaginatedProducts = async (cursor, limit) => {
+export const getAllProducts = async () => {
   try {
-    const query = cursor
-      ? { _id: { $gt: cursor } } // Fetch products with `_id` greater than the cursor
-      : {};
+    const products = await Product.find()
+      .select("-__v -createdAt -updatedAt") // Exclude version key
+      .populate({
+        path: "reviews",
+        select: "message rating createdAt", // Select specific review fields
+        populate: {
+          path: "userId",
+          select: "fName lName", // Select specific user fields
+          model: "User",
+        },
+        options: {
+          sort: { createdAt: -1 }, // Sort reviews by newest first
+        },
+      })
+      .lean();
 
-    const products = await Product.find(query)
-      .select("-createdAt -updatedAt -__v")
-      .sort({ _id: 1 }) // Sort by `_id` in ascending order
-      .limit(limit);
+    if (!products) {
+      throw new Error("No products found");
+    }
 
-    return products;
+    // Format the products and calculate review statistics
+    const formattedProducts = products.map((product) => {
+      const reviews = product.reviews || [];
+
+      return {
+        ...product,
+        totalReviews: reviews.length,
+        reviews: reviews.map((review) => ({
+          _id: review._id,
+          message: review.message,
+          rating: review.rating,
+          createdAt: review.createdAt,
+          user: review.userId
+            ? {
+                _id: review.userId._id,
+                name: `${review.userId.fName} ${review.userId.lName}`,
+              }
+            : null,
+        })),
+      };
+    });
+
+    return formattedProducts;
   } catch (error) {
-    console.error("Error fetching products by cursor:", error);
+    console.error("Error fetching products with reviews:", error);
     throw error;
   }
 };

@@ -26,7 +26,14 @@ childRouter.post(
   createChildValidator,
   addNewChild
 );
-childRouter.get("/", isAuthenticated, isAuthorized, retrievePaginatedChildren);
+
+childRouter.get(
+  "/admin",
+  isAuthenticated,
+  isAuthorized,
+  retrievePaginatedChildren
+);
+
 childRouter.get("/me", isAuthenticated, retriveCurrentUserChildren);
 childRouter.delete("/:id", isAuthenticated, deleteChild);
 
