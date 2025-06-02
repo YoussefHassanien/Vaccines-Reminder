@@ -1,36 +1,39 @@
 import express from "express";
 import {
   createCart,
-  retrieveUserCartDetails,
+  retrieveUserPendingCartDetails,
   createCartProduct,
   eraseCartProduct,
   modifyCartProductQuantity,
   eraseCart,
   modifyCartStatus,
-  retrieveUserPendingCart,
   retrieveUserConfirmedAndWaitingCarts,
+  adminModifyCartStatus,
 } from "./controller.js";
 import {
   createCartValidator,
-  retrieveUserCartDetailsValidator,
   createCartProductValidator,
   eraseCartProductValidator,
   modifyCartProductQuantityValidator,
   eraseCartValidator,
   modifyCartStatusValidator,
+  adminModifyCartStatusValidator,
 } from "./validation.js";
 import {
   createCartLimiter,
-  retrieveUserCartDetailsLimiter,
+  retrieveUserPendingCartDetailsLimiter,
   createCartProductLimiter,
   eraseCartProductLimiter,
   modifyCartProductQuantityLimiter,
   eraseCartLimiter,
   modifyCartStatusLimiter,
-  retrieveUserPendingCartLimiter,
   retrieveUserConfirmedAndWaitingCartsLimiter,
+  adminModifyCartStatusLimiter,
 } from "./rateLimiter.js";
-import { isAuthenticated } from "../../middlewares/authentication.js";
+import {
+  isAuthenticated,
+  isAuthorized,
+} from "../../middlewares/authentication.js";
 
 const cartsRouter = express.Router();
 
@@ -43,14 +46,6 @@ cartsRouter.post(
   createCart
 );
 
-// Get user's pending cart
-cartsRouter.get(
-  "/pending",
-  retrieveUserPendingCartLimiter,
-  isAuthenticated,
-  retrieveUserPendingCart
-);
-
 // Get user's confirmed and waiting carts
 cartsRouter.get(
   "/my-orders",
@@ -59,15 +54,15 @@ cartsRouter.get(
   retrieveUserConfirmedAndWaitingCarts
 );
 
-// Get cart details by ID
+// Get pending cart details
 cartsRouter.get(
-  "/:cartId",
-  retrieveUserCartDetailsLimiter,
+  "/pending",
+  retrieveUserPendingCartDetailsLimiter,
   isAuthenticated,
-  retrieveUserCartDetailsValidator,
-  retrieveUserCartDetails
+  retrieveUserPendingCartDetails
 );
 
+// Delete the cart
 cartsRouter.delete(
   "/:cartId",
   eraseCartLimiter,
@@ -83,6 +78,15 @@ cartsRouter.patch(
   isAuthenticated,
   modifyCartStatusValidator,
   modifyCartStatus
+);
+
+cartsRouter.patch(
+  "/status/admin/:cartId",
+  adminModifyCartStatusLimiter,
+  isAuthenticated,
+  isAuthorized,
+  adminModifyCartStatusValidator,
+  adminModifyCartStatus
 );
 
 // Add product to cart
@@ -111,6 +115,5 @@ cartsRouter.patch(
   modifyCartProductQuantityValidator,
   modifyCartProductQuantity
 );
-
 
 export default cartsRouter;

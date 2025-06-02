@@ -20,7 +20,7 @@ export const createCartLimiter = rateLimit({
  * Rate limiter for retrieving cart details
  * Allows more frequent reads with 60 requests per minute
  */
-export const retrieveUserCartDetailsLimiter = rateLimit({
+export const retrieveUserPendingCartDetailsLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 60, // 60 requests per minute
   message: {
@@ -116,23 +116,6 @@ export const modifyCartStatusLimiter = rateLimit({
 });
 
 /**
- * Rate limiter for retrieving user pending cart
- * Allows frequent reads with 100 requests per minute
- * Higher limit since this is a common operation for checking cart status
- */
-export const retrieveUserPendingCartLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // 100 requests per minute
-  message: {
-    message:
-      "Too many pending cart retrieval attempts. Please try again after a minute.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: false,
-});
-
-/**
  * Rate limiter for retrieving user's confirmed and waiting carts
  * Allows frequent reads with 50 requests per minute
  * Higher limit since users may check their order status frequently
@@ -149,4 +132,21 @@ export const retrieveUserConfirmedAndWaitingCartsLimiter = rateLimit({
   skipSuccessfulRequests: false,
   standardHeaders: true,
   legacyHeaders: false,
+});
+
+/**
+ * Rate limiter for admin cart status modification
+ * Restricts admin to 50 status updates per 5 mins
+ * This prevents abuse of cart status changes
+ */
+export const adminModifyCartStatusLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 mins
+  max: 50, // 50 requests per 5 mins
+  message: {
+    message:
+      "Too many cart status update attempts. Please try again after 5 mins.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false,
 });

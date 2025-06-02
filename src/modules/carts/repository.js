@@ -90,10 +90,10 @@ export const addCart = async (cartData) => {
  * @param {String} cartId - MongoDB ObjectId of the cart
  * @returns {Promise<Object|null>} The cart or null if not found
  */
-export const getUserCartDetails = async (userId, cartId) => {
+export const getUserPendingCartDetails = async (userId) => {
   try {
     // Find carts for this user
-    const cart = await Cart.findOne({ userId, status: "Pending", _id: cartId })
+    const cart = await Cart.findOne({ userId, status: "Pending" })
       .select("-__v -updatedAt -createdAt")
       .lean();
 
@@ -427,21 +427,6 @@ export const updateCartStatus = async (cartId, userId) => {
   }
 };
 
-export const getUserPendingCart = async (userId) => {
-  try {
-    const cart = await Cart.findOne({ userId, status: "Pending" });
-
-    if (!cart) {
-      throw new Error(`Pending cart with user id: ${userId} not found`);
-    }
-
-    return formatMongoDbObjects(cart);
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-};
-
 /**
  * Get user's carts with status "Confirmed" or "Waiting for cash payment"
  * @param {String} userId - MongoDB ObjectId of the user
@@ -452,7 +437,7 @@ export const getUserConfirmedAndWaitingCarts = async (userId) => {
     // Get user's carts with "Confirmed" or "Waiting for cash payment" status
     const carts = await Cart.find({
       userId,
-      status: { $in: ["Confirmed", "Waiting for cash payment"] },
+      status: { $in: ["Confirmed", "Waiting for cash payment", "Delivered"] },
     })
       .sort({ updatedAt: -1 })
       .select("-__v -createdAt -updatedAt") // Exclude unwanted fields
@@ -464,6 +449,28 @@ export const getUserConfirmedAndWaitingCarts = async (userId) => {
       `Error fetching confirmed and waiting carts for user id: ${userId}`,
       error
     );
+    throw error;
+  }
+};
+
+export const adminUpdateCartStatus = async (cartId, status) => {
+  try {
+    const cart = await Cart.findByIdAndUpdate(
+      cartId,
+      { status: status },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-__v");
+
+    if (!cart) {
+      throw new Error(`Cart with id: ${cartId} not found`);
+    }
+
+    return cart;
+  } catch (error) {
+    console.error(error);
     throw error;
   }
 };

@@ -1,7 +1,7 @@
 import {
   addCart,
   addCartProduct,
-  getUserCartDetails,
+  getUserPendingCartDetails,
   getUserById,
   getProductById,
   getCartProductsByCartId,
@@ -12,8 +12,8 @@ import {
   removeCartProduct,
   removeCart,
   updateCartStatus,
-  getUserPendingCart,
   getUserConfirmedAndWaitingCarts,
+  adminUpdateCartStatus,
 } from "./repository.js";
 
 /**
@@ -66,19 +66,19 @@ export const insertCartProduct = async (cartProductData) => {
  * @param {String} cartId - Cart ID
  * @returns {Object} Response with status code and message
  */
-export const fetchUserCartDetails = async (userId, cartId) => {
+export const fetchUserPendingCartDetails = async (userId) => {
   try {
-    const userCart = await getUserCartDetails(userId, cartId);
+    const userCart = await getUserPendingCartDetails(userId);
     if (!userCart) {
       return {
         statusCode: 404,
-        message: `Could not find cart with ID: ${cartId} for user: ${userId}`,
+        message: `Could not find pending cart for user: ${userId}`,
       };
     }
 
     return {
       statusCode: 200,
-      message: `Cart retrieved successfully`,
+      message: `Pendingcart retrieved successfully`,
       data: userCart,
     };
   } catch (error) {
@@ -385,37 +385,6 @@ export const changeCartStatus = async (cartId, userId) => {
 };
 
 /**
- * Fetches the user's pending cart
- * @param {String} userId - User ID
- * @returns {Object} Response with status code and message
- */
-export const fetchUserPendingCart = async (userId) => {
-  try {
-    const pendingCart = await getUserPendingCart(userId);
-
-    return {
-      statusCode: 200,
-      message: "Pending cart retrieved successfully",
-      data: pendingCart,
-    };
-  } catch (error) {
-    // Handle specific error cases
-    if (error.message.includes("not found")) {
-      return {
-        statusCode: 404,
-        message: "No pending cart found for this user",
-      };
-    }
-
-    return {
-      statusCode: 500,
-      message: "Error retrieving pending cart",
-      error: error.message,
-    };
-  }
-};
-
-/**
  * Fetches user's confirmed and waiting carts
  * @param {String} userId - User ID
  * @returns {Object} Response with status code and message
@@ -435,14 +404,40 @@ export const fetchUserConfirmedAndWaitingCarts = async (userId) => {
     return {
       statusCode: 200,
       message:
-        "User's confirmed and waiting for cash payment carts retrieved successfully",
-      data: carts,
+        "User's confirmed, waiting for cash payment and delivered carts retrieved successfully",
+      data: { carts },
     };
   } catch (error) {
     return {
       statusCode: 500,
       message:
         "Error retrieving user's confirmed and waiting for cash payment carts",
+      error: error.message,
+    };
+  }
+};
+
+export const adminChangeCartStatus = async (cartId, status) => {
+  try {
+    const updatedCart = await adminUpdateCartStatus(cartId, status);
+
+    return {
+      statusCode: 200,
+      message: `Cart status is updated successfully`,
+      data: {
+        cart: updatedCart,
+      },
+    };
+  } catch (error) {
+    if (error.message.includes("not found")) {
+      throw {
+        statusCode: 404,
+        message: `Cart of id: ${cartId} not found`,
+      };
+    }
+    throw {
+      statusCode: 500,
+      message: "Error updating cart status",
       error: error.message,
     };
   }

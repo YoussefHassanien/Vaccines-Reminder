@@ -67,7 +67,7 @@ const productSchema = new mongoose.Schema(
               (feature) => feature.length >= 3 && feature.length <= 500
             );
           },
-          message: "Each feature must be between 3 and 250 characters",
+          message: "Each feature must be between 3 and 500 characters",
         },
       ],
     },
@@ -79,8 +79,23 @@ const productSchema = new mongoose.Schema(
       maxlength: [30, "Required age must be of 30 characters maximum"],
     },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Virtual field to populate reviews with user details
+productSchema.virtual("reviews", {
+  ref: "Product-Review", // Reference to ProductReview model
+  localField: "_id", // Product's _id field
+  foreignField: "productId", // ProductReview's productId field
+  options: {
+    sort: { createdAt: -1 }, // Sort by newest first
+    populate: {
+      path: "userId",
+      select: "fName lName email", // Only get first name, last name, and email
+      model: "User",
+    },
+  },
+});
 
 // Trim each feature string
 productSchema.pre("save", function (next) {
