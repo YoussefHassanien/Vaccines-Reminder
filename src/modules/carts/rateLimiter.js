@@ -167,3 +167,20 @@ export const modifyCartPaymentTypeLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skipSuccessfulRequests: false,
 });
+
+/**
+ * Rate limiter for admin to retrieve all users' carts
+ * Restricts admin to 30 requests per 5 minutes to prevent system overload
+ * More permissive for admin operations but still controlled
+ */
+export const retrieveAllUsersCartsLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  limit: 30, // 30 requests per 5 minutes
+  message: {
+    message:
+      "Too many cart retrieval attempts. Please try again after 5 minutes.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false,
+});

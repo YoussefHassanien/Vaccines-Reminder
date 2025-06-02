@@ -13,6 +13,7 @@ import {
   removeCart,
   updateCartStatus,
   getUserOnlinePaidAndWaitingCarts,
+  getAllUsersCarts,
   adminUpdateCartStatus,
   updateCartPaymentType,
 } from "./repository.js";
@@ -467,6 +468,37 @@ export const changeCartPaymentType = async (cartId, userId, paymentType) => {
     throw {
       statusCode: 500,
       message: "Error updating cart payment type",
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Fetches all users' carts for admin with user information
+ * @returns {Object} Response with status code and message
+ */
+export const fetchAllUsersCarts = async () => {
+  try {
+    const carts = await getAllUsersCarts();
+
+    return {
+      statusCode: 200,
+      message: "All users' carts retrieved successfully",
+      data: {
+        carts,
+      },
+    };
+  } catch (error) {
+    if (error.message.includes("not found")) {
+      throw {
+        statusCode: 404,
+        message: error.message,
+      };
+    }
+
+    throw {
+      statusCode: 500,
+      message: "Error fetching all users' carts",
       error: error.message,
     };
   }
