@@ -2055,10 +2055,11 @@ paths:
     patch:
       tags:
         - Carts
-      summary: Update cart status
+      summary: Update cart status for cash payment
       description: >
         Update the status of a cash payment cart from "Pending" to "Waiting for cash payment".
         This endpoint is used when a user confirms their cash payment cart.
+        Only works for pending carts with cash payment type that contain at least one product.
       parameters:
         - in: path
           name: cartId
@@ -2083,11 +2084,7 @@ paths:
                     type: object
                     properties:
                       confirmedCart:
-                        allOf:
-                          - $ref: "#/components/schemas/Cart"
-                        examples:
-                          waitingForPaymentCart:
-                            $ref: "#/components/schemas/Cart/examples/waitingForPaymentCart"
+                        $ref: "#/components/schemas/Cart"
                   error:
                     type: object
                     nullable: true
@@ -2129,6 +2126,12 @@ paths:
                           msg:
                             type: string
                             example: "Cart not found, does not belong to you, is not in 'Pending' status, or is not a cash payment cart"
+                      cart:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cannot update status of an empty cart. Please add products first."
         "401":
           description: Unauthorized - Authentication required
           content:
@@ -2161,7 +2164,119 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Too many cart retrieval attempts. Please try again after a minute."
+                    example: "Too many cart status update attempts. Please try again after 15 mins."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating cart status"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/status/admin/{cartId}:
+    patch:
+      tags:
+        - Carts
+      summary: Update cart status (Admin only)
+      description: >
+        Admin can update cart status to any valid status (Pending, Online paid, Waiting for cash payment, Delivered, Cancelled).
+        This is different from the user endpoint which only allows Pending → Waiting for cash payment.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart to update
+          example: "680cde050f7a995dadea207a"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: ["Pending", "Online paid", "Waiting for cash payment", "Delivered", "Cancelled"]
+                  description: New status for the cart
+                  example: "Delivered"
+      responses:
+        "200":
+          description: Cart status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart status updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid cart status value"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart with ID 680cde050f7a995dadea207a not found"
         "500":
           description: Server error
           content:
@@ -2308,8 +2423,6 @@ paths:
                         buildingNumber: 123
                         apartmentNumber: 45
                         paymentType: "Online"
-                        createdAt: "2025-05-13T10:15:30Z"
-                        updatedAt: "2025-05-13T12:30:45Z"
                       - _id: "60d21b4667d0d8992e610c88"
                         userId: "60d21b4667d0d8992e610c85"
                         productsCount: 1
@@ -2321,8 +2434,6 @@ paths:
                         buildingNumber: 456
                         apartmentNumber: 12
                         paymentType: "Cash"
-                        createdAt: "2025-05-12T08:20:15Z"
-                        updatedAt: "2025-05-12T14:45:30Z"
                     error: null
         "401":
           description: Unauthorized - Authentication required
@@ -2378,7 +2489,9 @@ paths:
       tags:
         - Carts
       summary: Add product to cart
-      description: Add a product to an existing cart
+      description: >
+        Add a product to an existing pending cart. Automatically updates cart totals and product inventory.
+        Products cannot be added to the same cart twice - use quantity update instead.
       parameters:
         - in: path
           name: cartId
@@ -2433,7 +2546,41 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Validation failed. Please check your input."
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cart not found, does not belong to you, or is not in 'Pending' status"
+                      productId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "This product is already in your cart. Use the update quantity endpoint instead."
+                      quantity:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Insufficient inventory. Only 5 units available."
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
         "404":
           description: Cart or product not found
           content:
@@ -2475,7 +2622,8 @@ paths:
       tags:
         - Carts
       summary: Remove product from cart
-      description: Remove a specific product from a cart
+      description: >
+        Remove a specific product from a cart and automatically update cart totals and return product quantity to inventory.
       parameters:
         - in: path
           name: cartId
@@ -2509,6 +2657,44 @@ paths:
                   error:
                     type: object
                     nullable: true
+        "400":
+          description: Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cart not found, does not belong to you, or is not in 'Pending' status"
+                      productId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Product not found in this cart"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
         "404":
           description: Cart, product, or cart product not found
           content:
@@ -2549,7 +2735,9 @@ paths:
       tags:
         - Carts
       summary: Update product quantity in cart
-      description: Update the quantity of a product in a cart
+      description: >
+        Update the quantity of a product in a cart. Automatically adjusts cart totals and product inventory.
+        Validates that sufficient inventory is available for quantity increases.
       parameters:
         - in: path
           name: cartId
@@ -2606,7 +2794,926 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Insufficient inventory. Only 5 additional units available."
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      quantity:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Insufficient inventory. Only 5 additional units available."
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Cart, product, or cart product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product not found in this cart"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many quantity update attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating product quantity"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/{cartId}:
+    delete:
+      tags:
+        - Carts
+      summary: Delete cart
+      description: >
+        Delete an entire cart and return all products to inventory. Only pending carts can be deleted.
+        This operation is irreversible and will permanently remove the cart and all its products.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "680cde050f7a995dadea207a"
+      responses:
+        "200":
+          description: Cart deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart deleted successfully"
+                  data:
+                    type: object
+                    properties:
+                      deletedCart:
+                        $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Cart not found or invalid status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot delete cart with status: Confirmed"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart not found or does not belong to you"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cart deletion attempts. Please try again after an hour."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting cart"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/status/{cartId}:
+    patch:
+      tags:
+        - Carts
+      summary: Update cart status for cash payment
+      description: >
+        Update the status of a cash payment cart from "Pending" to "Waiting for cash payment".
+        This endpoint is used when a user confirms their cash payment cart.
+        Only works for pending carts with cash payment type that contain at least one product.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart to update
+          example: "680cde050f7a995dadea207a"
+      responses:
+        "200":
+          description: Cart status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart status is updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      confirmedCart:
+                        $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                successfulUpdate:
+                  summary: "Successful status update"
+                  value:
+                    message: "Cart status is updated successfully"
+                    data:
+                      confirmedCart:
+                        _id: "60d21b4667d0d8992e610c88"
+                        userId: "60d21b4667d0d8992e610c85"
+                        productsCount: 2
+                        totalPrice: 89.98
+                        status: "Waiting for cash payment"
+                        governorate: "Alexandria"
+                        city: "Sidi Gaber"
+                        street: "Corniche Street"
+                        buildingNumber: 456
+                        apartmentNumber: 12
+                        paymentType: "Cash"
+                    error: null
+        "400":
+          description: Invalid input or cart validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cart not found, does not belong to you, is not in 'Pending' status, or is not a cash payment cart"
+                      cart:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cannot update status of an empty cart. Please add products first."
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart with id: 680cde050f7a995dadea207a not found for user with id: 60d21b4667d0d8992e610c84"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cart status update attempts. Please try again after 15 mins."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating cart status"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/status/admin/{cartId}:
+    patch:
+      tags:
+        - Carts
+      summary: Update cart status (Admin only)
+      description: >
+        Admin can update cart status to any valid status (Pending, Online paid, Waiting for cash payment, Delivered, Cancelled).
+        This is different from the user endpoint which only allows Pending → Waiting for cash payment.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart to update
+          example: "680cde050f7a995dadea207a"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: ["Pending", "Online paid", "Waiting for cash payment", "Delivered", "Cancelled"]
+                  description: New status for the cart
+                  example: "Delivered"
+      responses:
+        "200":
+          description: Cart status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart status updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid cart status value"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart with ID 680cde050f7a995dadea207a not found"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating cart status"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/pending:
+    get:
+      tags:
+        - Carts
+      summary: Get user's pending cart
+      description: Retrieve the current user's pending cart if one exists
+      responses:
+        "200":
+          description: Pending cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Pending cart retrieved successfully"
+                  data:
+                    $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                pendingCart:
+                  summary: "User's pending cart"
+                  value:
+                    message: "Pending cart retrieved successfully"
+                    data:
+                      _id: "60d21b4667d0d8992e610c87"
+                      userId: "60d21b4667d0d8992e610c85"
+                      productsCount: 2
+                      totalPrice: 79.98
+                      status: "Pending"
+                      governorate: "Cairo"
+                      city: "Nasr City"
+                      street: "Abbas El-Akkad Street"
+                      buildingNumber: 123
+                      apartmentNumber: 45
+                      paymentType: "Cash"
+                    error: null
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: No pending cart found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No pending cart found for this user"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many pending cart retrieval attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving pending cart"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/my-orders:
+    get:
+      tags:
+        - Carts
+      summary: Get user's confirmed and waiting carts
+      description: Retrieve the current user's carts with status "Confirmed" or "Waiting for cash payment"
+      responses:
+        "200":
+          description: User's confirmed and waiting carts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User's confirmed and waiting carts retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                userOrders:
+                  summary: "User's order history"
+                  value:
+                    message: "User's confirmed and waiting carts retrieved successfully"
+                    data:
+                      - _id: "60d21b4667d0d8992e610c89"
+                        userId: "60d21b4667d0d8992e610c85"
+                        productsCount: 2
+                        totalPrice: 89.98
+                        status: "Confirmed"
+                        governorate: "Cairo"
+                        city: "Nasr City"
+                        street: "Abbas El-Akkad Street"
+                        buildingNumber: 123
+                        apartmentNumber: 45
+                        paymentType: "Online"
+                      - _id: "60d21b4667d0d8992e610c88"
+                        userId: "60d21b4667d0d8992e610c85"
+                        productsCount: 1
+                        totalPrice: 29.99
+                        status: "Waiting for cash payment"
+                        governorate: "Alexandria"
+                        city: "Sidi Gaber"
+                        street: "Corniche Street"
+                        buildingNumber: 456
+                        apartmentNumber: 12
+                        paymentType: "Cash"
+                    error: null
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: No confirmed or waiting carts found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No confirmed or waiting carts found for this user"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many cart status retrieval attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving user's confirmed and waiting carts"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/{cartId}/products:
+    post:
+      tags:
+        - Carts
+      summary: Add product to cart
+      description: >
+        Add a product to an existing pending cart. Automatically updates cart totals and product inventory.
+        Products cannot be added to the same cart twice - use quantity update instead.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "680cde050f7a995dadea207a"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+                - quantity
+              properties:
+                productId:
+                  type: string
+                  format: uuid
+                  description: MongoDB ObjectId of the product to add
+                  example: "6803e59f5cfbd3f8d54aaec9"
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: Quantity of the product
+                  example: 2
+      responses:
+        "201":
+          description: Product successfully added to cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product is successfully added to cart"
+                  data:
+                    $ref: "#/components/schemas/CartProduct"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cart not found, does not belong to you, or is not in 'Pending' status"
+                      productId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "This product is already in your cart. Use the update quantity endpoint instead."
+                      quantity:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Insufficient inventory. Only 5 units available."
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Cart or product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product with ID 6803e59f5cfbd3f8d54aaec9 not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many product addition attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error adding product to cart"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/{cartId}/products/{productId}:
+    delete:
+      tags:
+        - Carts
+      summary: Remove product from cart
+      description: >
+        Remove a specific product from a cart and automatically update cart totals and return product quantity to inventory.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "680cde050f7a995dadea207a"
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the product to remove
+          example: "6803e59f5cfbd3f8d54aaec9"
+      responses:
+        "200":
+          description: Product successfully removed from cart
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product removed from cart successfully"
+                  data:
+                    $ref: "#/components/schemas/CartProduct"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      cartId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cart not found, does not belong to you, or is not in 'Pending' status"
+                      productId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Product not found in this cart"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Cart, product, or cart product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product not found in this cart"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many product removal attempts. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error removing product from cart"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+    patch:
+      tags:
+        - Carts
+      summary: Update product quantity in cart
+      description: >
+        Update the quantity of a product in a cart. Automatically adjusts cart totals and product inventory.
+        Validates that sufficient inventory is available for quantity increases.
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the cart
+          example: "680cde050f7a995dadea207a"
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the product
+          example: "6803e59f5cfbd3f8d54aaec9"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: New quantity for the product
+                  example: 3
+      responses:
+        "200":
+          description: Product quantity updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart product quantity updated successfully"
+                  data:
+                    $ref: "#/components/schemas/CartProduct"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid quantity or insufficient inventory
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation failed"
+                  errors:
+                    type: object
+                    properties:
+                      quantity:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Insufficient inventory. Only 5 additional units available."
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
         "404":
           description: Cart, product, or cart product not found
           content:
@@ -4528,7 +5635,6 @@ paths:
                       type: "Complaint"
                       createdAt: "2025-05-28T14:30:45Z"
                       updatedAt: "2025-05-28T14:30:45Z"
-                    error: null
         "400":
           description: Invalid input or validation failed
           content:
@@ -4692,40 +5798,20 @@ paths:
                     example: "fail"
                   message:
                     type: string
-                    example: "Unauthorized"
-        "403":
-          description: Forbidden - Admin access required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
+                    example: "Unauthorized"        
+          "403":
+            description: Forbidden - Admin access required
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
                     type: string
                     example: "fail"
                   message:
                     type: string
                     example: "You are not allowed to access this route"
-        "404":
-          description: No complaints found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "No complaints found"
-        "429":
-          description: Too many requests
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Too many complaint retrieval attempts. Please try again after a minute."
         "500":
           description: Server error
           content:
@@ -4735,22 +5821,19 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error fetching complaints"
+                    example: "Error retrieving complaints"
                   error:
                     type: string
-                    example: "Server error"
-      security:
-        - BearerAuth: []
+                    example: "Server error"      
+                    security:
+                     - BearerAuth: []
 
   /api/products-reviews/{productId}:
     post:
       tags:
         - Product Reviews
       summary: Create product review
-      description: >
-        Submit a review for a product that has been delivered to the user.
-        Users can only review products they have purchased and received.
-        Each user can only review a product once.
+      description: Add a new review for a specific product
       parameters:
         - in: path
           name: productId
@@ -4758,8 +5841,8 @@ paths:
           schema:
             type: string
             format: uuid
-          description: MongoDB ObjectId of the product to review
-          example: "6803e59f5cfbd3f8d54aaec9"
+          description: ID of the product to review
+          example: "60d21b4667d0d8992e610c85"
       requestBody:
         required: true
         content:
@@ -4772,17 +5855,17 @@ paths:
               properties:
                 message:
                   type: string
-                  description: Review message (10-5000 characters)
-                  example: "Great product! My child loves it and it's easy to administer."
+                  description: Review message (10-1000 characters)
+                  example: "Great product! My child loves it and it's very effective."
                 rating:
                   type: integer
                   minimum: 1
                   maximum: 5
-                  description: Product rating from 1 to 5 stars
+                  description: Product rating from 1 to 5
                   example: 5
       responses:
         "201":
-          description: Product review created successfully
+          description: Review created successfully
           content:
             application/json:
               schema:
@@ -4793,21 +5876,11 @@ paths:
                     example: "Product review is successfully created"
                   data:
                     $ref: "#/components/schemas/ProductReview"
-              examples:
-                newReview:
-                  summary: "Successfully created product review"
-                  value:
-                    message: "Product review is successfully created"
-                    data:
-                      _id: "6839a9f7c7522462a378f7db"
-                      userId: "68055a4228a57b56dc11b7df"
-                      productId: "6803e59f5cfbd3f8d54aaec9"
-                      message: "Great product! My child loves it and it's easy to administer."
-                      rating: 5
-                      createdAt: "2025-05-30T12:52:07.842Z"
-                      updatedAt: "2025-05-30T12:52:07.842Z"
+                  error:
+                    type: object
+                    nullable: true
         "400":
-          description: Invalid input or user already reviewed this product
+          description: Invalid input or review already exists
           content:
             application/json:
               schema:
@@ -4816,19 +5889,6 @@ paths:
                   message:
                     type: string
                     example: "You have already reviewed this product"
-                  error:
-                    type: string
-                    example: "Validation error"
-        "403":
-          description: User cannot review this product
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "You can't review a product that has not been delivered to you yet"
         "404":
           description: Product not found
           content:
@@ -4858,10 +5918,10 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error inserting product review"
+                    example: "Error creating product review"
                   error:
                     type: string
-                    example: "Database connection error"
+                    example: "Server error"
       security:
         - BearerAuth: []
 
@@ -4870,9 +5930,7 @@ paths:
       tags:
         - Product Reviews
       summary: Delete product review
-      description: >
-        Delete a product review. Users can only delete their own reviews.
-        Deleting a review will automatically update the product's average rating.
+      description: Delete a specific product review (Admin only or review owner)
       parameters:
         - in: path
           name: reviewId
@@ -4880,11 +5938,11 @@ paths:
           schema:
             type: string
             format: uuid
-          description: MongoDB ObjectId of the review to delete
-          example: "6839a9f7c7522462a378f7db"
+          description: ID of the review to delete
+          example: "60d21b4667d0d8992e610c87"
       responses:
         "200":
-          description: Product review deleted successfully
+          description: Review deleted successfully
           content:
             application/json:
               schema:
@@ -4895,33 +5953,10 @@ paths:
                     example: "Product review is successfully deleted"
                   data:
                     type: object
-                    properties:
-                      deletedProductReview:
-                        $ref: "#/components/schemas/ProductReview"
-              examples:
-                deletedReview:
-                  summary: "Successfully deleted product review"
-                  value:
-                    message: "Product review is successfully deleted"
-                    data:
-                      deletedProductReview:
-                        _id: "6839a9f7c7522462a378f7db"
-                        userId: "68055a4228a57b56dc11b7df"
-                        productId: "6803e59f5cfbd3f8d54aaec9"
-                        message: "Great product! My child loves it."
-                        rating: 5
-                        createdAt: "2025-05-30T12:52:07.842Z"
-                        updatedAt: "2025-05-30T12:52:07.842Z"
-        "403":
-          description: User can only delete their own reviews
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "You can only delete your own reviews"
+                    nullable: true
+                  error:
+                    type: object
+                    nullable: true
         "404":
           description: Review not found
           content:
@@ -4932,6 +5967,16 @@ paths:
                   message:
                     type: string
                     example: "Product review not found"
+        "403":
+          description: Forbidden - Cannot delete other users' reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You can only delete your own reviews"
         "429":
           description: Too many requests
           content:
@@ -4941,7 +5986,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Too many review deletion attempts. Please try again after 10 minutes."
+                    example: "Too many review deletion attempts. Please try again after 5 minutes."
         "500":
           description: Server error
           content:
@@ -4954,17 +5999,643 @@ paths:
                     example: "Error deleting product review"
                   error:
                     type: string
-                    example: "Database connection error"
+                    example: "Server error"
       security:
         - BearerAuth: []
 
-# Add Nurse Management section
-  /api/nurse:
+  /api/payment/send-otp/{cartId}:
+    get:
+      tags:
+        - Payment
+      summary: Send payment OTP
+      description: Send WhatsApp OTP for cart payment verification
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the cart to process payment
+          example: "60d21b4667d0d8992e610c85"
+      responses:
+        "200":
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OTP sent successfully"
+                  data:
+                    type: object
+                    properties:
+                      cartId:
+                        type: string
+                        format: uuid
+                        example: "60d21b4667d0d8992e610c85"
+                      phoneNumber:
+                        type: string
+                        example: "+201012345678"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid request or cart not eligible for payment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart is not pending or cart not found"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many OTP requests. Please try again after 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error sending OTP"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/payment/verify-otp:
     post:
       tags:
-        - Nurse Management
+        - Payment
+      summary: Verify payment OTP
+      description: Verify WhatsApp OTP and complete payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cartId
+                - otp
+              properties:
+                cartId:
+                  type: string
+                  format: uuid
+                  description: ID of the cart to verify payment
+                  example: "60d21b4667d0d8992e610c85"
+                otp:
+                  type: string
+                  description: 6-digit OTP code
+                  example: "123456"
+      responses:
+        "200":
+          description: Payment verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment verified successfully"
+                  data:
+                    type: object
+                    properties:
+                      cartId:
+                        type: string
+                        format: uuid
+                        example: "60d21b4667d0d8992e610c85"
+                      status:
+                        type: string
+                        example: "Online paid"
+                      totalPrice:
+                        type: number
+                        format: float
+                        example: 299.99
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid OTP or expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired OTP"
+        "404":
+          description: Cart or OTP not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart not found or OTP not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many OTP verification attempts. Please try again after 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error verifying OTP"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/payment/resend-otp/{cartId}:
+    patch:
+      tags:
+        - Payment
+      summary: Resend payment OTP
+      description: Resend WhatsApp OTP for cart payment verification
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the cart to resend OTP
+          example: "60d21b4667d0d8992e610c85"
+      responses:
+        "200":
+          description: OTP resent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OTP resent successfully"
+                  data:
+                    type: object
+                    properties:
+                      cartId:
+                        type: string
+                        format: uuid
+                        example: "60d21b4667d0d8992e610c85"
+                      phoneNumber:
+                        type: string
+                        example: "+201012345678"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid request or no existing OTP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No OTP found for this cart"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many resend OTP attempts. Please try again after 2 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error resending OTP"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/payment/cancel/{cartId}:
+    delete:
+      tags:
+        - Payment
+      summary: Cancel payment
+      description: Cancel payment process and remove OTP
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the cart to cancel payment
+          example: "60d21b4667d0d8992e610c85"
+      responses:
+        "200":
+          description: Payment cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment cancelled successfully"
+                  data:
+                    type: object
+                    nullable: true
+                  error:
+                    type: object
+                    nullable: true
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many payment cancellation attempts. Please try again after 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error cancelling payment"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/carts/payment-type/{cartId}:
+    patch:
+      tags:
+        - Carts
+      summary: Modify cart payment type
+      description: Change the payment method for a pending cart
+      parameters:
+        - in: path
+          name: cartId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the cart to modify payment type
+          example: "60d21b4667d0d8992e610c85"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentType
+              properties:
+                paymentType:
+                  type: string
+                  enum: ["Cash", "Online"]
+                  description: New payment method for the cart
+                  example: "Online"
+      responses:
+        "200":
+          description: Payment type updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart payment type updated successfully"
+                  data:
+                    $ref: "#/components/schemas/Cart"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid payment type or cart not eligible
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid payment type or cart is not pending"
+        "404":
+          description: Cart not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cart not found"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many payment type modification attempts. Please try again after 1 minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating cart payment type"
+                  error:
+                    type: string
+                    example: "Server error"      
+      security:
+        - BearerAuth: []
+
+  /api/providers/admin/add:
+    post:
+      tags:
+        - Providers
+      summary: Add new provider
+      description: Add a new vaccine provider to the system (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - phoneNumber
+                - email
+                - address
+              properties:
+                name:
+                  type: string
+                  description: Provider name (2-100 characters)
+                  example: "Cairo Medical Supplies"
+                phoneNumber:
+                  type: string
+                  description: Provider phone number
+                  example: "+201012345678"
+                email:
+                  type: string
+                  format: email
+                  description: Provider email address
+                  example: "info@cairomed.com"
+                address:
+                  type: string
+                  description: Provider address
+                  example: "123 Tahrir Square, Cairo, Egypt"
+      responses:
+        "201":
+          description: Provider added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Provider added successfully"
+                  data:
+                    $ref: "#/components/schemas/Provider"
+                  error:
+                    type: object
+                    nullable: true
+        "400":
+          description: Invalid input or provider already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Provider with this email already exists"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many provider creation attempts. Please try again after 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error adding provider"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/nurse:
+    get:
+      tags:
+        - Nurses
+      summary: Get all nurses
+      description: Retrieve a paginated list of all nurses (Admin only)
+      parameters:
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: MongoDB ObjectId of the last nurse from previous page
+          example: "60d21b4667d0d8992e610c85"
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of nurses per page
+          example: 10
+      responses:
+        "200":
+          description: Nurses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Nurses retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Nurse"
+                  nextCursor:
+                    type: string
+                    nullable: true
+                    description: ObjectId of the last item, use for next page request
+                    example: "60d21b4667d0d8992e610c86"
+                  error:
+                    type: object
+                    nullable: true
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving nurses"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - Nurses
       summary: Create new nurse
-      description: Add a new nurse to the system (Admin only). Automatically creates slots for the next 2 weeks.
+      description: Add a new nurse to the system (Admin only)
       requestBody:
         required: true
         content:
@@ -4972,37 +6643,26 @@ paths:
             schema:
               type: object
               required:
-                - fName
-                - lName
-                - email
-                - phone
+                - name
+                - phoneNumber
                 - hospitalName
               properties:
-                fName:
+                name:
                   type: string
-                  description: Nurse first name (3-15 characters)
-                  example: "Ahmed"
-                lName:
+                  description: Nurse's full name (2-100 characters)
+                  example: "Dr. Sarah Ahmed"
+                phoneNumber:
                   type: string
-                  description: Nurse last name (3-15 characters)
-                  example: "Mohamed"
-                email:
-                  type: string
-                  format: email
-                  description: Nurse email address (must be unique)
-                  example: "nurse.ahmed@hospital.com"
-                phone:
-                  type: string
-                  description: Nurse phone number (exactly 11 digits, must be unique)
-                  example: "01012345678"
+                  description: Nurse's phone number (unique)
+                  example: "+201012345678"
                 hospitalName:
                   type: string
-                  description: Hospital or clinic name where nurse works
+                  description: Hospital or clinic where nurse works
                   example: "Cairo Medical Center"
                 image:
                   type: string
                   format: binary
-                  description: Nurse profile image (optional)
+                  description: Nurse's profile image (optional)
       responses:
         "201":
           description: Nurse created successfully
@@ -5013,14 +6673,14 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Nurse is successfully created"
+                    example: "Nurse created successfully"
                   data:
                     $ref: "#/components/schemas/Nurse"
                   error:
                     type: object
                     nullable: true
         "400":
-          description: Invalid input or validation failed
+          description: Invalid input or nurse already exists
           content:
             application/json:
               schema:
@@ -5028,22 +6688,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Validation Failed!"
-                  errors:
-                    type: object
-                    properties:
-                      email:
-                        type: object
-                        properties:
-                          msg:
-                            type: string
-                            example: "Email already in use"
-                      phone:
-                        type: object
-                        properties:
-                          msg:
-                            type: string
-                            example: "Phone number already exists"
+                    example: "Nurse with this phone number already exists"
         "401":
           description: Unauthorized - Authentication required
           content:
@@ -5086,30 +6731,24 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/nurse/{nurseId}/slots:
     get:
       tags:
-        - Nurse Management
-      summary: Get all nurses with pagination
-      description: Retrieve a paginated list of all nurses in the system (Admin only)
+        - Nurses
+      summary: Get nurse slots
+      description: Retrieve all time slots for a specific nurse (Admin only)
       parameters:
-        - in: query
-          name: cursor
+        - in: path
+          name: nurseId
+          required: true
           schema:
             type: string
-          description: MongoDB ObjectId of the last nurse from previous page
+            format: uuid
+          description: ID of the nurse
           example: "60d21b4667d0d8992e610c85"
-        - in: query
-          name: limit
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-          description: Number of nurses per page
-          example: 10
       responses:
         "200":
-          description: Nurses retrieved successfully
+          description: Nurse slots retrieved successfully
           content:
             application/json:
               schema:
@@ -5117,14 +6756,24 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Nurses are successfully retrieved"
+                    example: "Nurse slots retrieved successfully"
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Nurse"
+                      $ref: "#/components/schemas/NurseSlot"
                   error:
                     type: object
                     nullable: true
+        "404":
+          description: Nurse not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Nurse not found"
         "401":
           description: Unauthorized - Authentication required
           content:
@@ -5160,19 +6809,19 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error getting all nurses"
+                    example: "Error retrieving nurse slots"
                   error:
                     type: string
                     example: "Server error"
       security:
         - BearerAuth: []
 
-  /api/nurse/{nurseId}/slots:
-    get:
+  /api/nurse/{nurseId}/assign:
+    post:
       tags:
-        - Nurse Management
-      summary: Get nurse available slots
-      description: Retrieve all available and booked slots for a specific nurse (Admin only)
+        - Nurses
+      summary: Assign nurse to vaccine request
+      description: Assign a nurse to a specific vaccine request (Admin only)
       parameters:
         - in: path
           name: nurseId
@@ -5180,11 +6829,31 @@ paths:
           schema:
             type: string
             format: uuid
-          description: MongoDB ObjectId of the nurse
+          description: ID of the nurse to assign
           example: "60d21b4667d0d8992e610c85"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - vaccineRequestId
+                - slotId
+              properties:
+                vaccineRequestId:
+                  type: string
+                  format: uuid
+                  description: ID of the vaccine request
+                  example: "60d21b4667d0d8992e610c87"
+                slotId:
+                  type: string
+                  format: uuid
+                  description: ID of the nurse slot
+                  example: "60d21b4667d0d8992e610c88"
       responses:
         "200":
-          description: Nurse slots retrieved successfully
+          description: Nurse assigned successfully
           content:
             application/json:
               schema:
@@ -5192,46 +6861,19 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Nurse slots retrieved successfully"
+                    example: "Nurse assigned to vaccine request successfully"
                   data:
                     type: object
-                    description: Slots grouped by date
-                    additionalProperties:
-                      type: array
-                      items:
+                    properties:
+                      vaccineRequest:
+                        $ref: "#/components/schemas/VaccineRequest"
+                      nurseSlot:
                         $ref: "#/components/schemas/NurseSlot"
                   error:
                     type: object
                     nullable: true
-              examples:
-                nurseSlots:
-                  summary: "Nurse slots grouped by date"
-                  value:
-                    message: "Nurse slots retrieved successfully"
-                    data:
-                      "2025-05-30":
-                        - _id: "6839c1a2c7522462a378f7dd"
-                          nurseId: "60d21b4667d0d8992e610c85"
-                          date: "2025-05-30"
-                          startTime: "09:00"
-                          endTime: "10:00"
-                          isBooked: false
-                        - _id: "6839c1a2c7522462a378f7de"
-                          nurseId: "60d21b4667d0d8992e610c85"
-                          date: "2025-05-30"
-                          startTime: "10:00"
-                          endTime: "11:00"
-                          isBooked: true
-                      "2025-05-31":
-                        - _id: "6839c1a2c7522462a378f7df"
-                          nurseId: "60d21b4667d0d8992e610c85"
-                          date: "2025-05-31"
-                          startTime: "09:00"
-                          endTime: "10:00"
-                          isBooked: false
-                    error: null
-        "404":
-          description: No slots found for nurse
+        "400":
+          description: Invalid request or slot already booked
           content:
             application/json:
               schema:
@@ -5239,7 +6881,43 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "No slots found for nurse with ID: 60d21b4667d0d8992e610c85"
+                    example: "Nurse slot is already booked"
+        "404":
+          description: Nurse, vaccine request, or slot not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Nurse or vaccine request not found"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
         "500":
           description: Server error
           content:
@@ -5249,19 +6927,19 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error retrieving nurse slots"
+                    example: "Error assigning nurse to vaccine request"
                   error:
                     type: string
-                    example: "Database connection error"
+                    example: "Server error"
       security:
         - BearerAuth: []
 
   /api/nurse/{nurseId}/free-slots:
     get:
       tags:
-        - Nurse Management
-      summary: Get nurse free slots
-      description: Retrieve only the available (unbooked) slots for a specific nurse (Admin only)
+        - Nurses
+      summary: Get free nurse slots
+      description: Retrieve available (unbooked) time slots for a specific nurse (Admin only)
       parameters:
         - in: path
           name: nurseId
@@ -5269,7 +6947,7 @@ paths:
           schema:
             type: string
             format: uuid
-          description: MongoDB ObjectId of the nurse
+          description: ID of the nurse
           example: "60d21b4667d0d8992e610c85"
       responses:
         "200":
@@ -5285,178 +6963,7 @@ paths:
                   data:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          format: uuid
-                          example: "6839c1a2c7522462a378f7dd"
-                        date:
-                          type: string
-                          format: date
-                          example: "2025-05-30"
-                        startTime:
-                          type: string
-                          example: "09:00"
-                        endTime:
-                          type: string
-                          example: "10:00"
-                  error:
-                    type: object
-                    nullable: true
-              examples:
-                freeSlots:
-                  summary: "Available nurse slots"
-                  value:
-                    message: "Free nurse slots retrieved successfully"
-                    data:
-                      - _id: "6839c1a2c7522462a378f7dd"
-                        date: "2025-05-30"
-                        startTime: "09:00"
-                        endTime: "10:00"
-                      - _id: "6839c1a2c7522462a378f7de"
-                        date: "2025-05-30"
-                        startTime: "11:00"
-                        endTime: "12:00"
-                      - _id: "6839c1a2c7522462a378f7df"
-                        date: "2025-05-31"
-                        startTime: "09:00"
-                        endTime: "10:00"
-                    error: null
-        "404":
-          description: No free slots found for nurse
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "No free slots found for nurse with ID: 60d21b4667d0d8992e610c85"
-        "500":
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error retrieving free slots"
-                  error:
-                    type: string
-                    example: "Database connection error"
-      security:
-        - BearerAuth: []
-
-  /api/nurse/{nurseId}/assign:
-    post:
-      tags:
-        - Nurse Management
-      summary: Assign nurse to vaccine request
-      description: Assign a nurse to a specific vaccine request by booking a slot (Admin only)
-      parameters:
-        - in: path
-          name: nurseId
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: MongoDB ObjectId of the nurse
-          example: "60d21b4667d0d8992e610c85"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - slotId
-                - vaccineId
-              properties:
-                slotId:
-                  type: string
-                  format: uuid
-                  description: MongoDB ObjectId of the slot to book
-                  example: "6839c1a2c7522462a378f7dd"
-                vaccineId:
-                  type: string
-                  format: uuid
-                  description: MongoDB ObjectId of the vaccine request
-                  example: "60d21b4667d0d8992e610c90"
-      responses:
-        "200":
-          description: Nurse assigned successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Nurse assigned to vaccine request successfully"
-        "400":
-          description: Invalid assignment or slot already booked
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Slot is already booked"
-        "404":
-          description: Slot or vaccine request not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Slot not found"
-        "500":
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error assigning nurse"
-                  error:
-                    type: string
-                    example: "Database connection error"
-      security:
-        - BearerAuth: []
-
-  /api/nurse/{id}:
-    delete:
-      tags:
-        - Nurse Management
-      summary: Delete nurse
-      description: Delete a nurse from the system (Admin only)
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: MongoDB ObjectId of the nurse to delete
-          example: "60d21b4667d0d8992e610c85"
-      responses:
-        "200":
-          description: Nurse deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Nurse deleted successfully"
+                      $ref: "#/components/schemas/NurseSlot"
                   error:
                     type: object
                     nullable: true
@@ -5470,6 +6977,116 @@ paths:
                   message:
                     type: string
                     example: "Nurse not found"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving free nurse slots"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
+  /api/nurse/{id}:
+    delete:
+      tags:
+        - Nurses
+      summary: Delete nurse
+      description: Delete a nurse from the system (Admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the nurse to delete
+          example: "60d21b4667d0d8992e610c85"
+      responses:
+        "200":
+          description: Nurse deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Nurse deleted successfully"
+                  data:
+                    type: object
+                    nullable: true
+                  error:
+                    type: object
+                    nullable: true
+        "404":
+          description: Nurse not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Nurse not found"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
         "500":
           description: Server error
           content:
@@ -5484,325 +7101,16 @@ paths:
                     type: string
                     example: "Server error"
       security:
-        - BearerAuth: []      
+        - BearerAuth: []
 
 components:
   schemas:
-    Product:
-      type: object
-      properties:
-        _id:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c85"
-        name:
-          type: string
-          example: "Vitamin D Supplement"
-        price:
-          type: number
-          format: float
-          example: 29.99
-        description:
-          type: string
-          example: "High-quality vitamin D supplement for infants"
-        image:
-          type: string
-          example: "https://res.cloudinary.com/ddktkfkyy/image/upload/vitamin-d.jpg"
-        quantity:
-          type: integer
-          example: 100
-        rating:
-          type: number
-          format: float
-          description: Average rating from user reviews
-          example: 4.2
-        features:
-          type: array
-          items:
-            type: string
-          example:
-            [
-              "Sugar-free formula",
-              "Easy to administer",
-              "Pediatrician recommended",
-            ]
-        requiredAge:
-          type: string
-          example: "6 months and above"
-
-    Cart:
-      type: object
-      description: >
-        Represents a user's shopping cart. Address fields are required for Cash payments.
-        For Online payments, these fields are automatically populated from the user's registered address.
-        Users can only have one pending cart at a time.
-      properties:
-        _id:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c87"
-        userId:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c85"
-        productsCount:
-          type: integer
-          description: "Total number of product units in the cart"
-          example: 3
-        totalPrice:
-          type: number
-          format: float
-          description: "Total price of all products in the cart"
-          example: 149.97
-        status:
-          type: string
-          enum: ["Pending", "Confirmed", "Waiting for cash payment"]
-          description: "Cart status - Pending (can be modified), Waiting for cash payment (submitted for cash), Confirmed (completed)"
-          example: "Pending"
-        governorate:
-          type: string
-          description: "Delivery address governorate"
-          example: "Cairo"
-        city:
-          type: string
-          description: "Delivery address city"
-          example: "1st Settlement"
-        street:
-          type: string
-          description: "Delivery address street"
-          example: "Main Street"
-        buildingNumber:
-          type: integer
-          description: "Building number for delivery"
-          example: 123
-        apartmentNumber:
-          type: integer
-          description: "Apartment number for delivery"
-          example: 45
-        paymentType:
-          type: string
-          enum: ["Cash", "Online"]
-          description: "Payment method - affects address requirements and cart flow"
-          example: "Cash"
-          
-      examples:
-        pendingCart:
-          summary: "Pending Cart"
-          description: "A cart with pending status (newly created)"
-          value:
-            _id: "60d21b4667d0d8992e610c87"
-            userId: "60d21b4667d0d8992e610c85"
-            productsCount: 3
-            totalPrice: 149.97
-            status: "Pending"
-            governorate: "Cairo"
-            city: "1st Settlement"
-            street: "Main Street"
-            buildingNumber: 123
-            apartmentNumber: 45
-            paymentType: "Cash"
-        waitingForPaymentCart:
-          summary: "Waiting for Cash Payment Cart"
-          description: "A cart waiting for cash payment (status updated)"
-          value:
-            _id: "60d21b4667d0d8992e610c88"
-            userId: "60d21b4667d0d8992e610c85"
-            productsCount: 2
-            totalPrice: 89.98
-            status: "Waiting for cash payment"
-            governorate: "Alexandria"
-            city: "Sidi Gaber"
-            street: "Corniche Street"
-            buildingNumber: 456
-            apartmentNumber: 12
-            paymentType: "Cash"
-        confirmedCart:
-          summary: "Confirmed Cart"
-          description: "A cart that has been confirmed and processed"
-          value:
-            _id: "60d21b4667d0d8992e610c89"
-            userId: "60d21b4667d0d8992e610c85"
-            productsCount: 1
-            totalPrice: 29.99
-            status: "Confirmed"
-            governorate: "Giza"
-            city: "6th of October"
-            street: "Mall of Arabia Street"
-            buildingNumber: 789
-            apartmentNumber: 3
-            
-    CartProduct:
-      type: object
-      properties:
-        _id:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c88"
-        cartId:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c87"
-        productId:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c85"
-        quantity:
-          type: integer
-          example: 2
-        price:
-          type: number
-          format: float
-          example: 59.98
-          
-    PaymentOtp:
-      type: object
-      description: >
-        Represents a one-time password for payment verification.
-        OTPs are valid for 2 minutes and are tied to a specific cart.
-      properties:
-        _id:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c89"
-        cartId:
-          type: string
-          format: uuid
-          description: Reference to the cart this OTP is for
-          example: "60d21b4667d0d8992e610c87"
-        code:
-          type: string
-          description: Hashed 6-digit OTP code
-          example: "$2b$10$X9mT4vUeC0ZVK5hHGUvCIeQGiUpkXZRqBAY7y7Ly42X9XCYV9DJ2K"
-        createdAt:
-          type: string
-          format: date-time
-          description: When the OTP was created
-          example: "2023-04-21T12:34:56.789Z"
-        updatedAt:
-          type: string
-          format: date-time
-          description: When the OTP was last updated
-          example: "2023-04-21T12:34:56.789Z"
-    User:
-      type: object
-      properties:
-        _id:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c84"
-        fName:
-          type: string
-          example: "Ahmed"
-        lName:
-          type: string
-          example: "Mohamed"
-        email:
-          type: string
-          format: email
-          example: "ahmed@example.com"
-        nationalIdNumer:
-          type: string
-          example: "29912151234567"
-        phoneNumber:
-          type: string
-          example: "+201012345678"
-        governorate:
-          type: string
-          example: "Cairo"
-        city:
-          type: string
-          example: "Heliopolis"
-        street:
-          type: string
-          example: "123 Main Street"
-        buildingNumber:
-          type: integer
-          example: 42
-        apartmentNumber:
-          type: integer
-          example: 5
-        gender:
-          type: string
-          enum: ["male", "female"]
-          example: "male"
-        role:
-          type: string
-          enum: ["parent", "admin"]
-          example: "parent"
-        profileImg:
-          type: string
-          example: "https://res.cloudinary.com/your-cloud/image/upload/profile.jpg"
-    Vaccine:
-      type: object
-      properties:
-        _id:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c86"
-        name:
-          type: string
-          example: "Polio Vaccine"
-        price:
-          type: number
-          format: float
-          example: 49.99
-        description:
-          type: string
-          example: "Protects against poliomyelitis, a highly infectious viral disease that affects the nervous system and can cause permanent paralysis."
-        requiredAge:
-          type: string
-          example: "6 months"
-        provider:
-          type: string
-          format: uuid
-          description: "Reference to provider"
-          example: "60d21b4667d0d8992e610c85"
-    Provider:
-      type: object
-      properties:
-        _id:
-          type: string
-          format: uuid
-          example: "60d21b4667d0d8992e610c85"
-        name:
-          type: string
-          example: "Health Ministry"
-        phone:
-          type: string
-          example: "+201012345678"
-        city:
-          type: string
-          example: "Cairo"
-        governorate:
-          type: string
-          example: "Cairo"
-        district:
-          type: string
-          example: "Nasr City"
-        workHours:
-          type: string
-          example: "9 AM to 5 PM"
     VaccineRequest:
       type: object
       properties:
         _id:
           type: string
           format: uuid
-          example: "60d21b4667d0d8992e610c90"
-        parentId:
-          type: string
-          format: uuid
-          description: ID of the parent who submitted the request
-          example: "60d21b4667d0d8992e610c84"
-        childId:
-          type: string
-          format: uuid
-          description: ID of the child
-          example: "60d21b4667d0d8992e610c88"
-        vaccineId:
-          type: string
-          format: uuid
-          description: ID of the requested vaccine
           example: "60d21b4667d0d8992e610c86"
         status:
           type: string
@@ -5834,11 +7142,70 @@ components:
         createdAt:
           type: string
           format: date-time
-          example: "2025-05-13T10:15:30Z"
+          example: "2025-05-13T10:15:30Z"        updatedAt:
+          type: string
+          format: date-time          example: "2025-05-13T10:15:30Z"
+
+    Provider:
+      type: object
+      description: >
+        Represents a vaccine provider/supplier in the system. Providers supply 
+        vaccines to the platform and are managed by administrators.
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c88"
+        name:
+          type: string
+          description: Provider company or organization name
+          example: "Cairo Medical Supplies"
+        phoneNumber:
+          type: string
+          description: Provider's contact phone number (unique)
+          example: "+201012345678"
+        email:
+          type: string
+          format: email
+          description: Provider's email address (unique)
+          example: "info@cairomed.com"
+        address:
+          type: string
+          description: Provider's physical address
+          example: "123 Tahrir Square, Cairo, Egypt"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the provider was added to the system
+          example: "2025-05-28T10:15:30Z"
         updatedAt:
           type: string
           format: date-time
-          example: "2025-05-13T10:15:30Z"
+          description: When the provider information was last updated
+          example: "2025-05-28T10:15:30Z"
+      examples:
+        medicalSupplier:
+          summary: "Medical supplies provider"
+          description: "A pharmaceutical supplier company"
+          value:
+            _id: "60d21b4667d0d8992e610c88"
+            name: "Cairo Medical Supplies"
+            phoneNumber: "+201012345678"
+            email: "info@cairomed.com"
+            address: "123 Tahrir Square, Cairo, Egypt"
+            createdAt: "2025-05-28T10:15:30Z"
+            updatedAt: "2025-05-28T10:15:30Z"
+        hospitalProvider:
+          summary: "Hospital provider"
+          description: "A hospital that also acts as a vaccine provider"
+          value:
+            _id: "60d21b4667d0d8992e610c89"
+            name: "Alexandria General Hospital"
+            phoneNumber: "+203987654321"
+            email: "vaccines@alexhospital.com"
+            address: "456 Corniche Street, Alexandria, Egypt"
+            createdAt: "2025-05-27T14:20:45Z"
+            updatedAt: "2025-05-27T14:20:45Z"
 
     Child:
       type: object
@@ -5928,39 +7295,502 @@ components:
             _id: "60d21b4667d0d8992e610c92"
             userId: "60d21b4667d0d8992e610c85"
             message: "It would be great if you could add a mobile app for easier access to vaccination schedules and reminders."
-            type: "Suggestion"
-            createdAt: "2025-05-27T09:15:30Z"
+            type: "Suggestion"            createdAt: "2025-05-27T09:15:30Z"
             updatedAt: "2025-05-27T09:15:30Z"
+
+    Product:
+      type: object
+      description: >
+        Represents a product/vaccine in the system. Products can be purchased
+        and added to shopping carts by users.
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "6803e59f5cfbd3f8d54aaec9"
+        name:
+          type: string
+          description: Product name (2-100 characters)
+          example: "Vitamin D Supplement for Infants"
+        price:
+          type: number
+          format: float
+          minimum: 1
+          description: Product price in currency units
+          example: 29.99
+        description:
+          type: string
+          description: Product description (20-1000 characters)
+          example: "High-quality vitamin D supplement specially formulated for infants from 0-12 months. Sugar-free and easy to administer."
+        image:
+          type: string
+          format: uri
+          description: URL to product image stored in Cloudinary
+          example: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Products/example-product.jpg"
+        quantity:
+          type: integer
+          minimum: 0
+          description: Available product quantity in inventory
+          example: 100
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          description: Average product rating based on user reviews
+          example: 4.5
+        features:
+          type: array
+          description: List of product features (1-10 features, each 3-500 characters)
+          items:
+            type: string
+            minLength: 3
+            maxLength: 500
+          example:
+            - "Sugar-free formula"
+            - "Easy to administer"
+            - "Pediatrician recommended"
+            - "Safe for newborns"
+        requiredAge:
+          type: string
+          description: Required age information (5-30 characters)
+          minLength: 5
+          maxLength: 30
+          example: "0-12 months"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the product was created
+          example: "2025-05-20T10:15:30Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the product was last updated
+          example: "2025-05-20T10:15:30Z"
+        reviews:
+          type: array
+          description: Product reviews (populated from ProductReview collection)
+          items:
+            $ref: "#/components/schemas/ProductReview"
+      examples:
+        vitaminSupplement:
+          summary: "Vitamin D supplement product"
+          description: "A vitamin supplement for infants"
+          value:
+            _id: "6803e59f5cfbd3f8d54aaec9"
+            name: "Vitamin D Supplement for Infants"
+            price: 29.99
+            description: "High-quality vitamin D supplement specially formulated for infants from 0-12 months. Sugar-free and easy to administer."
+            image: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Products/vitamin-d.jpg"
+            quantity: 100
+            rating: 4.5
+            features:
+              - "Sugar-free formula"
+              - "Easy to administer"
+              - "Pediatrician recommended"
+              - "Safe for newborns"
+            requiredAge: "0-12 months"
+            createdAt: "2025-05-20T10:15:30Z"
+            updatedAt: "2025-05-20T10:15:30Z"
+
+    Cart:
+      type: object
+      description: >
+        Represents a shopping cart belonging to a user. Users can have one pending cart at a time,
+        and multiple completed carts (online paid, waiting for cash payment, or delivered).
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "680cde050f7a995dadea207a"
+        userId:
+          type: string
+          format: uuid
+          description: ID of the cart owner
+          example: "68055a4228a57b56dc11b7df"
+        productsCount:
+          type: integer
+          minimum: 0
+          description: Total number of individual products in the cart
+          example: 3
+        totalPrice:
+          type: number
+          format: float
+          minimum: 0
+          description: Total price of all products in the cart
+          example: 129.97
+        status:
+          type: string
+          enum: ["Pending", "Online paid", "Waiting for cash payment", "Delivered"]
+          description: Current status of the cart
+          example: "Pending"
+        governorate:
+          type: string
+          description: Delivery governorate (required for cash payment)
+          example: "Cairo"
+        city:
+          type: string
+          description: Delivery city (required for cash payment)
+          example: "Nasr City"
+        street:
+          type: string
+          description: Delivery street address (required for cash payment)
+          example: "Abbas El-Akkad St"
+        buildingNumber:
+          type: integer
+          minimum: 1
+          description: Delivery building number (required for cash payment)
+          example: 42
+        apartmentNumber:
+          type: integer
+          minimum: 1
+          description: Delivery apartment number (required for cash payment)
+          example: 5
+        paymentType:
+          type: string
+          enum: ["Cash", "Online"]
+          description: Payment method for the cart
+          example: "Cash"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the cart was created
+          example: "2025-05-28T14:30:45Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the cart was last updated
+          example: "2025-05-28T14:30:45Z"
+        products:
+          type: array
+          description: Products in the cart (populated from CartProduct collection)
+          items:
+            $ref: "#/components/schemas/CartProduct"
+      examples:
+        pendingCart:
+          summary: "Pending cart for cash payment"
+          description: "A cart in pending status waiting to be confirmed"
+          value:
+            _id: "680cde050f7a995dadea207a"
+            userId: "68055a4228a57b56dc11b7df"
+            productsCount: 2
+            totalPrice: 59.98
+            status: "Pending"
+            governorate: "Cairo"
+            city: "Nasr City"
+            street: "Abbas El-Akkad St"
+            buildingNumber: 42
+            apartmentNumber: 5
+            paymentType: "Cash"
+            createdAt: "2025-05-28T14:30:45Z"
+            updatedAt: "2025-05-28T14:30:45Z"
+        deliveredCart:
+          summary: "Delivered cart"
+          description: "A cart that has been successfully delivered"
+          value:
+            _id: "680cde050f7a995dadea207b"
+            userId: "68055a4228a57b56dc11b7df"
+            productsCount: 1
+            totalPrice: 29.99
+            status: "Delivered"
+            governorate: "Alexandria"
+            city: "Downtown"
+            street: "Corniche St"
+            buildingNumber: 15
+            apartmentNumber: 3
+            paymentType: "Online"
+            createdAt: "2025-05-25T10:15:30Z"
+            updatedAt: "2025-05-27T16:45:12Z"
+
+    CartProduct:
+      type: object
+      description: >
+        Represents a product within a cart, including quantity and calculated price.
+        Each cart can contain multiple products with different quantities.
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "680cde7a0f7a995dadea207c"
+        cartId:
+          type: string
+          format: uuid
+          description: ID of the cart containing this product
+          example: "680cde050f7a995dadea207a"
+        productId:
+          type: string
+          format: uuid
+          description: ID of the product in the cart
+          example: "6803e59f5cfbd3f8d54aaec9"
+        quantity:
+          type: integer
+          minimum: 1
+          description: Quantity of this product in the cart
+          example: 2
+        price:
+          type: number
+          format: float
+          minimum: 1
+          description: Total price for this quantity of the product
+          example: 59.98
+        name:
+          type: string
+          description: Product name (populated from Product collection)
+          example: "Vitamin D Supplement for Infants"
+        image:
+          type: string
+          format: uri
+          description: Product image URL (populated from Product collection)
+          example: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Products/vitamin-d.jpg"
+        requiredAge:
+          type: string
+          description: Product required age (populated from Product collection)
+          example: "0-12 months"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the product was added to the cart
+          example: "2025-05-28T14:32:15Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the cart product was last updated
+          example: "2025-05-28T14:32:15Z"
+      examples:
+        cartProductExample:
+          summary: "Cart product with details"
+          description: "A product in a cart with populated product information"
+          value:
+            _id: "680cde7a0f7a995dadea207c"
+            cartId: "680cde050f7a995dadea207a"
+            productId: "6803e59f5cfbd3f8d54aaec9"
+            quantity: 2
+            price: 59.98
+            name: "Vitamin D Supplement for Infants"
+            image: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Products/vitamin-d.jpg"
+            requiredAge: "0-12 months"
+            createdAt: "2025-05-28T14:32:15Z"
+            updatedAt: "2025-05-28T14:32:15Z"
+
+    User:
+      type: object
+      description: >
+        Represents a user/parent in the system. Users can manage children, 
+        create carts, submit reviews, and make vaccine requests.
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "68055a4228a57b56dc11b7df"
+        fName:
+          type: string
+          description: User's first name
+          example: "Ahmed"
+        lName:
+          type: string
+          description: User's last name
+          example: "Mohamed"
+        slug:
+          type: string
+          description: URL-friendly version of user's name
+          example: "ahmed-mohamed"
+        email:
+          type: string
+          format: email
+          description: User's email address (unique)
+          example: "ahmed.mohamed@example.com"
+        phoneNumber:
+          type: string
+          description: User's phone number (unique)
+          example: "+201012345678"
+        gender:
+          type: string
+          enum: ["male", "female"]
+          description: User's gender
+          example: "male"
+        birthDate:
+          type: string
+          format: date
+          description: User's birth date
+          example: "1990-01-15"
+        governorate:
+          type: string
+          description: User's governorate for address
+          example: "Cairo"
+        city:
+          type: string
+          description: User's city for address
+          example: "Nasr City"
+        street:
+          type: string
+          description: User's street address
+          example: "Abbas El-Akkad St"
+        buildingNumber:
+          type: integer
+          minimum: 1
+          description: User's building number
+          example: 42
+        apartmentNumber:
+          type: integer
+          minimum: 1
+          description: User's apartment number
+          example: 5
+        role:
+          type: string
+          enum: ["user", "admin"]
+          description: User role in the system
+          example: "user"
+        isVerified:
+          type: boolean
+          description: Whether the user's account is verified
+          example: true
+        profilePicture:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to user's profile picture
+          example: "https://res.cloudinary.com/ddktkfkyy/image/upload/v1624291123/Vaccines-Reminder/Users/profile.jpg"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the user account was created
+          example: "2025-05-20T10:15:30Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the user account was last updated
+          example: "2025-05-20T10:15:30Z"
+      examples:
+        regularUser:
+          summary: "Regular user account"
+          description: "A standard user account with complete profile"
+          value:
+            _id: "68055a4228a57b56dc11b7df"
+            fName: "Ahmed"
+            lName: "Mohamed"
+            slug: "ahmed-mohamed"
+            email: "ahmed.mohamed@example.com"
+            phoneNumber: "+201012345678"
+            gender: "male"
+            birthDate: "1990-01-15"
+            governorate: "Cairo"
+            city: "Nasr City"
+            street: "Abbas El-Akkad St"
+            buildingNumber: 42
+            apartmentNumber: 5
+            role: "user"
+            isVerified: true
+            createdAt: "2025-05-20T10:15:30Z"
+            updatedAt: "2025-05-20T10:15:30Z"
+
+    Vaccine:
+      type: object
+      description: >
+        Represents a vaccine in the system that can be requested by users for their children.
+        Vaccines are provided by healthcare providers and have specific age requirements.
+      properties:
+        _id:
+          type: string
+          format: uuid
+          example: "60d21b4667d0d8992e610c87"
+        name:
+          type: string
+          description: Vaccine name (2-100 characters)
+          example: "Hepatitis B Vaccine"
+        requiredAge:
+          type: string
+          enum: 
+            - "No specific age required"
+            - "3 months"
+            - "6 months"
+            - "9 months"
+            - "1 year"
+            - "1 year and 3 months"
+            - "1 year and 6 months"
+            - "1 year and 9 months"
+            - "2 years"
+            - "2 years and 3 months"
+            - "2 years and 6 months"
+            - "2 years and 9 months"
+            - "3 years"
+            - "3 years and 3 months"
+            - "3 years and 6 months"
+            - "3 years and 9 months"
+            - "4 years"
+          description: Age requirement for the vaccine
+          example: "3 months"
+        description:
+          type: string
+          description: Vaccine description (20-1000 characters)
+          minLength: 20
+          maxLength: 1000
+          example: "Hepatitis B vaccine protects against hepatitis B virus infection. It is recommended for all newborns and infants as part of routine immunization."
+        price:
+          type: number
+          format: float
+          minimum: 0
+          description: Cost of the vaccine
+          example: 150.00
+        provider:
+          type: string
+          format: uuid
+          description: ID of the healthcare provider supplying this vaccine
+          example: "60d21b4667d0d8992e610c88"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the vaccine was added to the system
+          example: "2025-05-28T10:15:30Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the vaccine information was last updated
+          example: "2025-05-28T10:15:30Z"
+      examples:
+        hepatitisBVaccine:
+          summary: "Hepatitis B vaccine"
+          description: "Standard childhood vaccination"
+          value:
+            _id: "60d21b4667d0d8992e610c87"
+            name: "Hepatitis B Vaccine"
+            requiredAge: "3 months"
+            description: "Hepatitis B vaccine protects against hepatitis B virus infection. It is recommended for all newborns and infants as part of routine immunization."
+            price: 150.00
+            provider: "60d21b4667d0d8992e610c88"
+            createdAt: "2025-05-28T10:15:30Z"
+            updatedAt: "2025-05-28T10:15:30Z"
 
     ProductReview:
       type: object
       description: >
-        Represents a user review for a product. Users can only review products 
-        they have purchased and received. Each user can only review a product once.
+        Represents a product review submitted by a user. Each user can only 
+        submit one review per product, and users can only review products they have purchased.
       properties:
         _id:
           type: string
           format: uuid
           example: "6839a9f7c7522462a378f7db"
-        userId:
-          type: string
-          format: uuid
-          description: ID of the user who wrote the review
-          example: "68055a4228a57b56dc11b7df"
         productId:
           type: string
           format: uuid
           description: ID of the product being reviewed
-          example: "6803e59f5cfbd3f8d54aaec9"
+          example: "60d21b4667d0d8992e610c85"
+        userId:
+          type: string
+          format: uuid
+          description: ID of the user who submitted the review
+          example: "68055a4228a57b56dc11b7df"
         message:
           type: string
-          description: Review message content
-          example: "Great product! My child loves it and it's easy to administer."
+          description: Review message content (10-5000 characters)
+          minLength: 10
+          maxLength: 5000
+          example: "Great product! My child loves it and it's very effective."
         rating:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 5
-          description: Product rating from 1 to 5 stars
+          description: Product rating from 0 to 5 stars
           example: 5
         createdAt:
           type: string
@@ -5972,6 +7802,18 @@ components:
           format: date-time
           description: When the review was last updated
           example: "2025-05-30T12:52:07.842Z"
+      examples:
+        positiveReview:
+          summary: "Positive product review"
+          description: "A 5-star review with positive feedback"
+          value:
+            _id: "6839a9f7c7522462a378f7db"
+            productId: "60d21b4667d0d8992e610c85"
+            userId: "68055a4228a57b56dc11b7df"
+            message: "Excellent product quality! My baby responded very well to this vaccine. Highly recommended."
+            rating: 5
+            createdAt: "2025-05-30T12:52:07.842Z"
+            updatedAt: "2025-05-30T12:52:07.842Z"
 
     Nurse:
       type: object
@@ -6080,13 +7922,12 @@ components:
           description: "A slot that has been assigned to a vaccine request"
           value:
             _id: "6839c1a2c7522462a378f7de"
-            nurseId: "60d21b4667d0d8992e610c85"
-            date: "2025-05-30"
+            nurseId: "60d21b4667d0d8992e610c85"            date: "2025-05-30"
             startTime: "10:00"
             endTime: "11:00"
             isBooked: true
             createdAt: "2025-05-28T10:15:30Z"
-            updatedAt: "2025-05-30T08:45:22Z"        
+            updatedAt: "2025-05-30T08:45:22Z"
 
   securitySchemes:
     BearerAuth:

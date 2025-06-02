@@ -11,8 +11,9 @@ import {
   fetchCartProductsByCartId,
   deleteCart,
   changeCartStatus,
-  fetchUserConfirmedAndWaitingCarts,
+  fetchUserOnlinePaidAndWaitingCarts,
   adminChangeCartStatus,
+  changeCartPaymentType,
 } from "./services.js";
 
 /**
@@ -341,13 +342,13 @@ export const modifyCartStatus = async (req, res) => {
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-export const retrieveUserConfirmedAndWaitingCarts = async (req, res) => {
+export const retrieveUserOnlinePaidAndWaitingCarts = async (req, res) => {
   const user = req.user;
   const userId = user._id;
 
   try {
     const { statusCode, message, data, error } =
-      await fetchUserConfirmedAndWaitingCarts(userId);
+      await fetchUserOnlinePaidAndWaitingCarts(userId);
 
     // If the request was not successful, return early
     if (statusCode !== 200) {
@@ -418,6 +419,30 @@ export const adminModifyCartStatus = async (req, res) => {
     const { statusCode, message, data } = await adminChangeCartStatus(
       cartId,
       status
+    );
+
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
+      error: error.error,
+    });
+  }
+};
+
+export const modifyCartPaymentType = async (req, res) => {
+  const { cartId } = req.params;
+  const user = req.user;
+  const { paymentType } = req.body;
+
+  try {
+    const { statusCode, message, data } = await changeCartPaymentType(
+      cartId,
+      user._id,
+      paymentType
     );
 
     return res.status(statusCode).json({
