@@ -7,8 +7,10 @@ import {
   modifyCartProductQuantity,
   eraseCart,
   modifyCartStatus,
-  retrieveUserConfirmedAndWaitingCarts,
+  retrieveUserOnlinePaidAndWaitingCarts,
+  retrieveAllUsersCarts,
   adminModifyCartStatus,
+  modifyCartPaymentType,
 } from "./controller.js";
 import {
   createCartValidator,
@@ -18,6 +20,7 @@ import {
   eraseCartValidator,
   modifyCartStatusValidator,
   adminModifyCartStatusValidator,
+  modifyCartPaymentTypeValidator,
 } from "./validation.js";
 import {
   createCartLimiter,
@@ -27,8 +30,10 @@ import {
   modifyCartProductQuantityLimiter,
   eraseCartLimiter,
   modifyCartStatusLimiter,
-  retrieveUserConfirmedAndWaitingCartsLimiter,
+  retrieveUserOnlinePaidAndWaitingCartsLimiter,
+  retrieveAllUsersCartsLimiter,
   adminModifyCartStatusLimiter,
+  modifyCartPaymentTypeLimiter,
 } from "./rateLimiter.js";
 import {
   isAuthenticated,
@@ -49,9 +54,9 @@ cartsRouter.post(
 // Get user's confirmed and waiting carts
 cartsRouter.get(
   "/my-orders",
-  retrieveUserConfirmedAndWaitingCartsLimiter,
+  retrieveUserOnlinePaidAndWaitingCartsLimiter,
   isAuthenticated,
-  retrieveUserConfirmedAndWaitingCarts
+  retrieveUserOnlinePaidAndWaitingCarts
 );
 
 // Get pending cart details
@@ -81,12 +86,29 @@ cartsRouter.patch(
 );
 
 cartsRouter.patch(
+  "/payment-type/:cartId",
+  modifyCartPaymentTypeLimiter,
+  isAuthenticated,
+  modifyCartPaymentTypeValidator,
+  modifyCartPaymentType
+);
+
+cartsRouter.patch(
   "/status/admin/:cartId",
   adminModifyCartStatusLimiter,
   isAuthenticated,
   isAuthorized,
   adminModifyCartStatusValidator,
   adminModifyCartStatus
+);
+
+// Get all users' carts (Admin only)
+cartsRouter.get(
+  "/admin",
+  retrieveAllUsersCartsLimiter,
+  isAuthenticated,
+  isAuthorized,
+  retrieveAllUsersCarts
 );
 
 // Add product to cart

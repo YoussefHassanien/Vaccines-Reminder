@@ -1,14 +1,17 @@
 import { Router } from "express";
+
 import {
   addNewProviderValidator,
   findProviderByIdValidator,
   updateProviderValidator,
 } from "./validation.js";
+
 import {
   addNewProviderLimiter,
   fetchAllProvidersLimiter,
   fetchProviderByIdLimiter,
 } from "./rateLimiter.js";
+
 import {
   addProvider,
   getAllProviders,
@@ -16,6 +19,7 @@ import {
   updateProviderById,
   deleteProviderById,
 } from "./controller.js";
+
 import {
   isAuthenticated,
   isAuthorized,
@@ -59,5 +63,6 @@ providerRoute.delete(
   findProviderByIdValidator,
   deleteProviderById
 );
+
 
 export default providerRoute;

@@ -17,6 +17,13 @@ export const createCartValidator = [
     .bail()
     .escape(),
 
+  body("cart.status")
+    .optional()
+    .equals("Pending")
+    .withMessage("Cart status must be 'Pending' when creating a new cart")
+    .bail()
+    .escape(),
+
   body("cart.governorate")
     .if(body("cart.paymentType").equals("Cash"))
     .notEmpty()
@@ -373,9 +380,7 @@ export const modifyCartStatusValidator = [
       });
 
       if (!cart) {
-        throw new Error(
-          "Cart not found, does not belong to you, is not in 'Pending' status, or is not a cash payment cart"
-        );
+        throw new Error("Cart not found!");
       }
 
       // Check if cart has products
@@ -425,6 +430,51 @@ export const adminModifyCartStatusValidator = [
     .withMessage(
       "Status value is not valid, Status value can only be: Pending, Online paid, Waiting for cash payment, Delivered"
     )
+    .bail()
+    .escape(),
+
+  validatorMiddleware,
+];
+
+/**
+ * Validates cart status modification request
+ */
+export const modifyCartPaymentTypeValidator = [
+  param("cartId")
+    .notEmpty()
+    .withMessage("Cart ID is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid cart ID format")
+    .bail()
+    .custom(async (cartId, { req }) => {
+      // Check if cart exists and belongs to user
+      const cart = await Cart.findOne({
+        _id: cartId,
+        userId: req.user._id,
+        status: "Pending",
+      });
+
+      if (!cart) {
+        throw new Error("Cart not found!");
+      }
+
+      // Check if cart has products
+      const cartProducts = await CartProduct.find({ cartId });
+
+      if (!cartProducts || cartProducts.length === 0) {
+        throw new Error(
+          "Cannot update payment type of an empty cart. Please add products first."
+        );
+      }
+
+      return true;
+    }),
+
+  body("paymentType")
+    .optional()
+    .isIn(["Cash", "Online"])
+    .withMessage("Payment type must be either 'Cash' or 'Online'")
     .bail()
     .escape(),
 

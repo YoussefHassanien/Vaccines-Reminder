@@ -68,6 +68,7 @@ export const getProviderById = async (id) => {
   }
 };
 
+
 /**
  * Update a provider by its ID
  * @param {string} id - Provider ID
@@ -114,3 +115,4 @@ export const deleteProviderById = async (id) => {
     throw error;
   }
 };
+
