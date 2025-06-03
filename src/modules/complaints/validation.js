@@ -19,9 +19,9 @@ export const createComplaintValidator = [
     .notEmpty()
     .withMessage("Complaint type is required")
     .bail()
-    .isIn(["Complaint", "Suggestion"])
+    .isIn(["Complaint", "Suggestion", "Question"])
     .withMessage(
-      "Invalid complaint type. Must be one of: Complaint, Suggestion"
+      "Invalid complaint type. Must be one of: Complaint, Suggestion, Question"
     )
     .bail()
     .trim()

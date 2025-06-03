@@ -16,7 +16,7 @@ export const addNewComplaint = async (complaintData) => {
 
     return formattedComplaint;
   } catch (error) {
-    console.error("Error inserting complaint:", error);
+    console.error(error);
     throw error;
   }
 };
@@ -37,7 +37,7 @@ export const getAllComplaints = async () => {
 
     return complaints;
   } catch (error) {
-    console.error("Error fetching complaints", error);
+    console.error(error);
     throw error;
   }
 };

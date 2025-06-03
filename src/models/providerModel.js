@@ -9,6 +9,12 @@ const providerSchema = new mongoose.Schema(
       minlength: [2, "Name must be at least 2 characters"],
       maxlength: [100, "Name must be of 100 characters maximum"],
     },
+    slug: {
+      type: String,
+      required: [true, "Slug must be provided"],
+      unique: true,
+      trim: true,
+    },
     phone: {
       type: String,
       required: [true, "Phone number must be provided"],
