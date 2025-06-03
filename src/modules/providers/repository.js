@@ -67,3 +67,50 @@ export const getProviderById = async (id) => {
     throw error;
   }
 };
+
+/**
+ * Update a provider by its ID
+ * @param {string} id - Provider ID
+ * @param {Object} updateData - Data to update
+ * @returns {Promise<Object>} Updated provider document
+ */
+
+export const updateProviderById = async (id, updateData) => {
+  try {
+    const updatedProvider = await Provider.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    }).lean();
+    if (!updatedProvider) {
+      throw new Error("Provider not found");
+    }
+    delete updatedProvider.createdAt;
+    delete updatedProvider.updatedAt;
+    delete updatedProvider.__v;
+    return updatedProvider;
+  } catch (error) {
+    console.error("Error updating provider:", error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a provider by its ID
+ * @param {string} id - Provider ID
+ * @returns {Promise<Object>} Deleted provider document
+ */
+export const deleteProviderById = async (id) => {
+  try {
+    const deletedProvider = await Provider.findByIdAndDelete(id).lean();
+    if (!deletedProvider) {
+      throw new Error("Provider not found");
+    }
+    delete deletedProvider.createdAt;
+    delete deletedProvider.updatedAt;
+    delete deletedProvider.__v;
+    return deletedProvider;
+  } catch (error) {
+    console.error("Error deleting provider:", error);
+    throw error;
+  }
+};
