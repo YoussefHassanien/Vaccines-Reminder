@@ -83,7 +83,7 @@ const cartSchema = new mongoose.Schema(
     paymentType: {
       type: String,
       enum: ["Cash", "Online"],
-      default: "Online",
+      default: "Cash",
       required: [true, "Payment type must be specified"],
     },
   },
