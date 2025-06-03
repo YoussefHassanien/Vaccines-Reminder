@@ -458,6 +458,33 @@ export const getUserOnlinePaidAndWaitingCarts = async (userId) => {
   }
 };
 
+/**
+ * Get all users' carts for admin (all statuses)
+ * @returns {Promise<Array>} Array of all carts from all users
+ */
+export const getAllUsersCarts = async () => {
+  try {
+    // Get all carts from all users, sorted by most recent
+    const carts = await Cart.find()
+      .populate({
+        path: "userId",
+        select: "fName lName email phoneNumber",
+      })
+      .sort({ updatedAt: -1 })
+      .select("-__v") // Exclude unwanted fields
+      .lean(); // Get plain objects
+
+    if (!carts || carts.length === 0) {
+      throw new Error("Carts not found");
+    }
+
+    return carts;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
 export const adminUpdateCartStatus = async (cartId, status) => {
   try {
     const cart = await Cart.findByIdAndUpdate(

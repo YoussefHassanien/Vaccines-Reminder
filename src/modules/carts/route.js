@@ -8,6 +8,7 @@ import {
   eraseCart,
   modifyCartStatus,
   retrieveUserOnlinePaidAndWaitingCarts,
+  retrieveAllUsersCarts,
   adminModifyCartStatus,
   modifyCartPaymentType,
 } from "./controller.js";
@@ -30,6 +31,7 @@ import {
   eraseCartLimiter,
   modifyCartStatusLimiter,
   retrieveUserOnlinePaidAndWaitingCartsLimiter,
+  retrieveAllUsersCartsLimiter,
   adminModifyCartStatusLimiter,
   modifyCartPaymentTypeLimiter,
 } from "./rateLimiter.js";
@@ -98,6 +100,15 @@ cartsRouter.patch(
   isAuthorized,
   adminModifyCartStatusValidator,
   adminModifyCartStatus
+);
+
+// Get all users' carts (Admin only)
+cartsRouter.get(
+  "/admin",
+  retrieveAllUsersCartsLimiter,
+  isAuthenticated,
+  isAuthorized,
+  retrieveAllUsersCarts
 );
 
 // Add product to cart

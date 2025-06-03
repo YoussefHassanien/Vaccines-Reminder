@@ -14,6 +14,7 @@ import {
   fetchUserOnlinePaidAndWaitingCarts,
   adminChangeCartStatus,
   changeCartPaymentType,
+  fetchAllUsersCarts,
 } from "./services.js";
 
 /**
@@ -453,6 +454,116 @@ export const modifyCartPaymentType = async (req, res) => {
     return res.status(error.statusCode).json({
       message: error.message,
       error: error.error,
+    });
+  }
+};
+
+/**
+ * Retrieves all users' carts with their products (Admin only)
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const retrieveAllUsersCarts = async (req, res) => {
+  try {
+    const { data } = await fetchAllUsersCarts();
+
+    // Attach products to each cart
+    const cartsWithProducts = await Promise.all(
+      data.carts.map(async (cart) => {
+        try {
+          const {
+            statusCode: cartProductsStatusCode,
+            message: cartProductsMessage,
+            data: cartProducts,
+            error: cartProductsError,
+          } = await fetchCartProductsByCartId(cart._id);
+
+          // Attach products to cart based on the response
+          return {
+            ...cart,
+            products: cartProductsStatusCode === 200 ? cartProducts : [],
+            productsCount:
+              cartProductsStatusCode === 200 ? cartProducts.length : 0,
+          };
+        } catch (productError) {
+          console.warn(
+            `Failed to fetch products for cart ${cart._id}:`,
+            productError
+          );
+          // Return cart with empty products array if fetching fails
+          return {
+            ...cart,
+            products: [],
+            productsCount: 0,
+          };
+        }
+      })
+    );
+
+    // Group carts by user
+    const userCartsMap = new Map();
+
+    cartsWithProducts.forEach((cart) => {
+      // Check if userId exists and has required properties
+      if (!cart.userId || !cart.userId._id) {
+        console.warn(`Cart ${cart._id} has no valid user data, skipping...`);
+        return;
+      }
+
+      const userId = cart.userId._id.toString();
+
+      if (!userCartsMap.has(userId)) {
+        userCartsMap.set(userId, {
+          user: {
+            _id: cart.userId._id,
+            fName: cart.userId.fName,
+            lName: cart.userId.lName,
+            email: cart.userId.email,
+            phoneNumber: cart.userId.phoneNumber,
+            carts: [],
+          },
+        });
+      }
+
+      // Format cart data according to the requested structure
+      const formattedCart = {
+        _id: cart._id,
+        productsCount: cart.productsCount,
+        totalPrice: cart.totalPrice,
+        status: cart.status,
+        governorate: cart.governorate,
+        city: cart.city,
+        street: cart.street,
+        buildingNumber: cart.buildingNumber,
+        apartmentNumber: cart.apartmentNumber,
+        paymentType: cart.paymentType,
+        createdAt: cart.createdAt,
+        updatedAt: cart.updatedAt,
+        products: cart.products.map((product) => ({
+          _id: product.productId, // ✅ Fixed: use productId instead of product.product._id
+          name: product.name, // ✅ Fixed: direct access to name
+          image: product.image, // ✅ Fixed: direct access to image
+          requiredAge: product.requiredAge, // ✅ Fixed: direct access to requiredAge
+          quantity: product.quantity,
+          price: product.price,
+        })),
+      };
+
+      userCartsMap.get(userId).user.carts.push(formattedCart);
+    });
+
+    // Convert map to array
+    const usersWithCarts = Array.from(userCartsMap.values());
+
+    return res.status(200).json({
+      message: "All users' carts retrieved successfully",
+      data: usersWithCarts,
+      error: null,
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      message: error.message || "Error retrieving all users' carts",
+      error: error.error || error.message,
     });
   }
 };
