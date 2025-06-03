@@ -7,13 +7,10 @@ import User from "../../models/userModel.js";
  */
 export const getUser = async (userId) => {
   try {
-    const user = await User.findById(userId).lean(); // 1. await + lean()
-
+    const user = await User.findById(userId).lean();
     if (!user) {
       throw new Error("User not found");
     }
-
-    // 2. remove unwanted fields
     delete user.createdAt;
     delete user.updatedAt;
     delete user.__v;
@@ -82,6 +79,23 @@ export const updateUserById = async (id, updateData) => {
     });
   } catch (error) {
     console.error(`Error updating user by ID (${id}):`, error);
+    throw error;
+  }
+};
+
+export const getAllUsers = async (query) => {
+  try {
+    const users = await User.find(query)
+      .select("-password -createdAt -updatedAt -__v")
+      .lean();
+    return users.map((user) => {
+      delete user.createdAt;
+      delete user.updatedAt;
+      delete user.__v;
+      return user;
+    });
+  } catch (error) {
+    console.error("Error fetching all users:", error);
     throw error;
   }
 };
