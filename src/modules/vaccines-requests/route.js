@@ -4,13 +4,18 @@ import {
   createVaccineRequestLimiter,
   retrieveVaccineRequestsLimiter,
   retrieveUserVaccineRequestsLimiter,
+  cancelUserVaccineRequestLimiter,
 } from "./rateLimiter.js";
 import {
   createVaccineRequest,
   retrieveVaccineRequests,
   retrieveUserVaccineRequests,
+  cancelUserVaccineRequest,
 } from "./controller.js";
-import { createVaccineRequestValidator } from "./validation.js";
+import {
+  createVaccineRequestValidator,
+  cancelUserVaccineRequestValidator,
+} from "./validation.js";
 import {
   isAuthenticated,
   isAuthorized,
@@ -29,6 +34,14 @@ vaccineRequestsRouter.get(
   retrieveUserVaccineRequestsLimiter,
   isAuthenticated,
   retrieveUserVaccineRequests
+);
+
+vaccineRequestsRouter.delete(
+  "/:vaccineRequestId",
+  cancelUserVaccineRequestLimiter,
+  isAuthenticated,
+  cancelUserVaccineRequestValidator,
+  cancelUserVaccineRequest
 );
 
 vaccineRequestsRouter.get(

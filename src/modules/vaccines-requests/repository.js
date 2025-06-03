@@ -1,4 +1,5 @@
 import VaccineRequest from "../../models/vaccineRequestModel.js";
+import NurseSlot from "../../models/nurseSlotModel.js";
 import { formatMongoDbObjects } from "../../utils/dataFormatting.js";
 
 /**
@@ -72,6 +73,37 @@ export const getUserVaccineRequests = async (userId) => {
     });
 
     return formattedVaccineRequests;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const removeUserVaccineRequest = async (vaccineRequestId) => {
+  try {
+    const vaccineRequest = await VaccineRequest.findByIdAndDelete(
+      vaccineRequestId
+    );
+    return formatMongoDbObjects(vaccineRequest);
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const updateNurseSlotIsBooked = async (nurseSlotId) => {
+  try {
+    const nurseSlot = await NurseSlot.findByIdAndUpdate(
+      nurseSlotId,
+      { isBooked: false },
+      { new: true, runValidators: true }
+    );
+
+    if (!nurseSlot) {
+      throw new Error(`Nurse slot of id: ${nurseSlotId} not found!`);
+    }
+
+    return formatMongoDbObjects(nurseSlot);
   } catch (error) {
     console.error(error);
     throw error;
