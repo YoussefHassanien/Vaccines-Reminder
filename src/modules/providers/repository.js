@@ -28,3 +28,42 @@ export const addNewProvider = async (providerData) => {
     throw error;
   }
 };
+
+/**
+ * Get all providers from the database
+ * @returns {Promise<Array>} List of all providers
+ */
+export const getAllProviders = async () => {
+  try {
+    const providers = await Provider.find().lean();
+    return providers.map((provider) => {
+      delete provider.createdAt;
+      delete provider.updatedAt;
+      delete provider.__v;
+      return provider;
+    });
+  } catch (error) {
+    console.error("Error fetching providers:", error);
+    throw error;
+  }
+};
+/**
+ * Get a provider by its ID
+ * @param {string} id - Provider ID
+ * @returns {Promise<Object>} Provider document
+ */
+export const getProviderById = async (id) => {
+  try {
+    const provider = await Provider.findById(id).lean();
+    if (!provider) {
+      throw new Error("Provider not found");
+    }
+    delete provider.createdAt;
+    delete provider.updatedAt;
+    delete provider.__v;
+    return provider;
+  } catch (error) {
+    console.error("Error fetching provider by ID:", error);
+    throw error;
+  }
+};

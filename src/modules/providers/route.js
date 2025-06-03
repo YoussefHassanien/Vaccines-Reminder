@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { addNewProviderValidator } from "./validation.js";
-import { addNewProviderLimiter } from "./rateLimiter.js";
-import { addProvider } from "./controller.js";
+import {
+  addNewProviderLimiter,
+  fetchAllProvidersLimiter,
+  fetchProviderByIdLimiter,
+} from "./rateLimiter.js";
+import { addProvider, getAllProviders, getProviderById } from "./controller.js";
 import {
   isAuthenticated,
   isAuthorized,
@@ -16,6 +20,18 @@ providerRoute.post(
   isAuthorized,
   addNewProviderValidator,
   addProvider
+);
+providerRoute.get(
+  "/",
+  isAuthenticated,
+  fetchAllProvidersLimiter,
+  getAllProviders
+);
+providerRoute.get(
+  "/:id",
+  isAuthenticated,
+  fetchProviderByIdLimiter,
+  getProviderById
 );
 
 export default providerRoute;
