@@ -33,6 +33,10 @@ export const createVaccineValidator = [
     .bail()
     .isIn([
       "No specific age required",
+      "24 hours",
+      "6 weeks",
+      "10 weeks",
+      "14 weeks",
       "3 months",
       "6 months",
       "9 months",
