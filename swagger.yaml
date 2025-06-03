@@ -6883,6 +6883,173 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/vaccine-requests/{vaccineRequestId}:
+    delete:
+      tags:
+        - Vaccine Requests
+      summary: Cancel user vaccine request
+      description: >
+        Cancel a user's vaccine request. Users can only cancel their own vaccine requests that have 
+        "Pending" or "Confirmed" status. For "Confirmed" requests, cancellation is only allowed if 
+        the vaccination date is at least 2 days in the future. When canceling a "Confirmed" request, 
+        the associated nurse slot is automatically unbooked.
+      parameters:
+        - in: path
+          name: vaccineRequestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the vaccine request to cancel
+          example: "683d5d2efda5e8f94840f9b5"
+      responses:
+        "200":
+          description: Vaccine request cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine request is canceled successfully"
+                  data:
+                    type: object
+                    properties:
+                      canceledVaccineRequest:
+                        allOf:
+                          - $ref: "#/components/schemas/VaccineRequest"
+                          - type: object
+                            properties:
+                              status:
+                                type: string
+                                enum: ["Cancelled"]
+                                example: "Cancelled"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                cancelledRequest:
+                  summary: "Successfully cancelled vaccine request"
+                  value:
+                    message: "Vaccine request is canceled successfully"
+                    data:
+                      canceledVaccineRequest:
+                        _id: "683d5d2efda5e8f94840f9b5"
+                        parentId: "68055a4228a57b56dc11b7df"
+                        childId: "680cde050f7a995dadea207a"
+                        vaccineId: "6803e59f5cfbd3f8d54aaec9"
+                        status: "Cancelled"
+                        vaccinationDate: "2025-06-10T08:00:00.000Z"
+                        governorate: "Cairo"
+                        city: "Nasr City"
+                        street: "Abbas El-Akkad Street"
+                        buildingNumber: 42
+                        apartmentNumber: 5
+                        phoneNumber: "+201015411320"
+                        nurseId: "680cde050f7a995dadea207b"
+                        nurseSlotId: "680cde050f7a995dadea207c"
+                        createdAt: "2025-06-02T08:13:34.492Z"
+                        updatedAt: "2025-06-03T10:35:45.890Z"
+                    error: null
+        "400":
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      vaccineRequestId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Vaccine request can be canceled only 2 days before its date"
+                          param:
+                            type: string
+                            example: "vaccineRequestId"
+                          location:
+                            type: string
+                            example: "params"
+              examples:
+                invalidIdFormat:
+                  summary: "Invalid vaccine request ID format"
+                  value:
+                    message: "Validation Failed!"
+                    errors:
+                      vaccineRequestId:
+                        msg: "Invalid vaccine request id format"
+                        param: "vaccineRequestId"
+                        location: "params"
+                cancellationTooLate:
+                  summary: "Cancellation too close to vaccination date"
+                  value:
+                    message: "Validation Failed!"
+                    errors:
+                      vaccineRequestId:
+                        msg: "Vaccine request can be canceled only 2 days before its date"
+                        param: "vaccineRequestId"
+                        location: "params"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "404":
+          description: Vaccine request not found or does not belong to user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine request of id: 683d5d2efda5e8f94840f9b5 and parent id: 68055a4228a57b56dc11b7df not found!"
+              examples:
+                requestNotFound:
+                  summary: "Vaccine request not found or access denied"
+                  value:
+                    message: "Vaccine request of id: 683d5d2efda5e8f94840f9b5 and parent id: 68055a4228a57b56dc11b7df not found!"
+        "429":
+          description: Too many cancellation requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many vaccine request cancelations. Please try again after 5 minutes."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error canceling vaccine request"
+                  error:
+                    type: string
+                    example: "Server error"
+      security:
+        - BearerAuth: []
+
   /api/vaccine-requests/admin:
     get:
       tags:

@@ -1,8 +1,8 @@
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
-import User from "../../models/userModel.js";
 import Child from "../../models/childModel.js";
 import Vaccine from "../../models/vaccineModel.js";
+import VaccineRequest from "../../models/vaccineRequestModel.js";
 
 /**
  * Validates vaccine request creation
@@ -71,7 +71,7 @@ export const createVaccineRequestValidator = [
 
       return true;
     }),
-  
+
   body("phoneNumber")
     .notEmpty()
     .withMessage("Phone number is required")
@@ -83,7 +83,7 @@ export const createVaccineRequestValidator = [
     )
     .bail()
     .escape(),
-  
+
   body("governorate")
     .notEmpty()
     .withMessage("Governorate is required")
@@ -127,6 +127,54 @@ export const createVaccineRequestValidator = [
     .bail()
     .isInt({ min: 1 })
     .withMessage("Apartment number must be a positive integer"),
+
+  validatorMiddleware,
+];
+
+export const cancelUserVaccineRequestValidator = [
+  param("vaccineRequestId")
+    .notEmpty()
+    .withMessage("Vaccine request id is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid vaccine request id format")
+    .bail()
+    .custom(async (vaccineRequestId, { req }) => {
+      const vaccineRequest = await VaccineRequest.findOne({
+        _id: vaccineRequestId,
+        parentId: req.user._id,
+        status: { $in: ["Pending", "Confirmed"] },
+      });
+
+      if (!vaccineRequest) {
+        throw new Error(
+          `Vaccine request of id: ${vaccineRequestId} and partent id: ${req.user._id} not found!`
+        );
+      }
+
+      if (vaccineRequest.status === "Confirmed") {
+        const now = new Date();
+        const vaccinationDate = new Date(vaccineRequest.vaccinationDate);
+
+        // Calculate the difference in milliseconds
+        const timeDifference = vaccinationDate.getTime() - now.getTime();
+
+        // Convert milliseconds to days (1 day = 24 * 60 * 60 * 1000 milliseconds)
+        const daysDifference = timeDifference / (24 * 60 * 60 * 1000);
+
+        // Check if the vaccination date is less than 2 days ahead
+        if (daysDifference < 2) {
+          throw new Error(
+            "Vaccine request can be canceled only 2 days before its date"
+          );
+        }
+      }
+
+      // Store the vaccine request in req object for use in controller
+      req.vaccineRequest = vaccineRequest;
+
+      return true;
+    }),
 
   validatorMiddleware,
 ];
