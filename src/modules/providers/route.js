@@ -1,11 +1,25 @@
 import { Router } from "express";
-import { addNewProviderValidator } from "./validation.js";
+
+import {
+  addNewProviderValidator,
+  findProviderByIdValidator,
+  updateProviderValidator,
+} from "./validation.js";
+
 import {
   addNewProviderLimiter,
   fetchAllProvidersLimiter,
   fetchProviderByIdLimiter,
 } from "./rateLimiter.js";
-import { addProvider, getAllProviders, getProviderById } from "./controller.js";
+
+import {
+  addProvider,
+  getAllProviders,
+  getProviderById,
+  updateProviderById,
+  deleteProviderById,
+} from "./controller.js";
+
 import {
   isAuthenticated,
   isAuthorized,
@@ -31,7 +45,24 @@ providerRoute.get(
   "/:id",
   isAuthenticated,
   fetchProviderByIdLimiter,
+  findProviderByIdValidator,
   getProviderById
 );
+providerRoute.put(
+  "/:id",
+  isAuthenticated,
+  isAuthorized,
+  findProviderByIdValidator,
+  updateProviderValidator,
+  updateProviderById
+);
+providerRoute.delete(
+  "/:id",
+  isAuthenticated,
+  isAuthorized,
+  findProviderByIdValidator,
+  deleteProviderById
+);
+
 
 export default providerRoute;
