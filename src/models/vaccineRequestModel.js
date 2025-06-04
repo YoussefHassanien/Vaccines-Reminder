@@ -19,11 +19,13 @@ const vaccineRequestSchema = new mongoose.Schema(
       ref: "Nurse",
       default: null,
     },
+
     nurseSlotId: {
       type: mongoose.Schema.ObjectId,
       ref: "NurseSlot",
       default: null,
     },
+
     vaccineId: {
       type: mongoose.Schema.ObjectId,
       ref: "Vaccine",

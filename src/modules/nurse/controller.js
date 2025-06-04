@@ -11,7 +11,7 @@ import {
 
 export const createNewNurse = async (req, res) => {
   try {
-    const optimizedProfileImageUrl = null;
+    let optimizedProfileImageUrl = null;
     const { fName, lName, email, phone, hospitalName } = req.body;
     if (req.file) {
       // Upload image to Cloudinary
@@ -38,7 +38,9 @@ export const createNewNurse = async (req, res) => {
       email,
       phone,
       hospitalName,
-      profileImage: optimizedProfileImageUrl || null,
+      profileImage:
+        optimizedProfileImageUrl ||
+        "https://i.pinimg.com/736x/9f/16/72/9f1672710cba6bcb0dfd93201c6d4c00.jpg",
     });
 
     return res.status(status).json({ message, data, error });
