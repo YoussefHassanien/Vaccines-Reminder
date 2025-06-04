@@ -15,6 +15,10 @@ const vaccineSchema = new mongoose.Schema(
       enum: {
         values: [
           "No specific age required",
+          "24 hours",
+          "6 weeks",
+          "10 weeks",
+          "14 weeks",
           "3 months",
           "6 months",
           "9 months",
