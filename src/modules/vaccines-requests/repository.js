@@ -1,4 +1,5 @@
 import VaccineRequest from "../../models/vaccineRequestModel.js";
+import NurseSlot from "../../models/nurseSlotModel.js";
 import { formatMongoDbObjects } from "../../utils/dataFormatting.js";
 
 /**
@@ -32,6 +33,79 @@ export const getAllVaccineRequests = async () => {
     return vaccineRequests;
   } catch (error) {
     console.error("Error fetching vaccine requests", error);
+    throw error;
+  }
+};
+
+export const getUserVaccineRequests = async (userId) => {
+  try {
+    const vaccineRequests = await VaccineRequest.find({ parentId: userId })
+      .select(
+        "status vaccinationDate governorate city street nurseId vaccineId"
+      )
+      .populate({
+        path: "vaccineId",
+        select: "name",
+      })
+      .populate({
+        path: "nurseId",
+        select: "hospitalName fName lName",
+        model: "Nurse",
+      });
+
+    if (!vaccineRequests || vaccineRequests.length === 0) {
+      throw new Error(`Vaccine requests for user with id: ${userId} not found`);
+    }
+
+    const formattedVaccineRequests = vaccineRequests.map((vr) => {
+      const vrObject = vr.toObject();
+
+      return {
+        _id: vrObject._id,
+        status: vrObject.status,
+        vaccinationDate: vrObject.vaccinationDate,
+        governorate: vrObject.governorate,
+        city: vrObject.city,
+        street: vrObject.street,
+        vaccine: vrObject.vaccineId,
+        nurse: vrObject.nurseId,
+      };
+    });
+
+    return formattedVaccineRequests;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const removeUserVaccineRequest = async (vaccineRequestId) => {
+  try {
+    const vaccineRequest = await VaccineRequest.findByIdAndDelete(
+      vaccineRequestId
+    );
+    return formatMongoDbObjects(vaccineRequest);
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const updateNurseSlotIsBooked = async (nurseSlotId) => {
+  try {
+    const nurseSlot = await NurseSlot.findByIdAndUpdate(
+      nurseSlotId,
+      { isBooked: false },
+      { new: true, runValidators: true }
+    );
+
+    if (!nurseSlot) {
+      throw new Error(`Nurse slot of id: ${nurseSlotId} not found!`);
+    }
+
+    return formatMongoDbObjects(nurseSlot);
+  } catch (error) {
+    console.error(error);
     throw error;
   }
 };

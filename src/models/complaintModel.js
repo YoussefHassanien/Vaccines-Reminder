@@ -14,7 +14,7 @@ const complaintSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["Complaint", "Suggestion"],
+      enum: ["Complaint", "Suggestion", "Question"],
       required: true,
     },
   },

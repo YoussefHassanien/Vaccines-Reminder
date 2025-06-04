@@ -147,6 +147,9 @@ export const bookSlot = async (slotId, vaccineId, nurseId) => {
       throw new Error("Vaccine request date does not match slot date");
     }
     existingRequest.nurseId = slot.nurseId;
+
+    existingRequest.nurseSlotId = slot._id;
+
     existingRequest.status = "Confirmed";
     await existingRequest.save();
 
