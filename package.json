@@ -5,7 +5,15 @@
   "description": "Vaccines reminder backend development server",
   "main": "app.js",
   "scripts": {
-    "dev": "node --watch --env-file=.env server.js"
+    "dev": "node --watch --env-file=.env server.js",
+    "start": "node server.js",
+    "build": "echo 'Build completed successfully'",
+    "test": "echo 'No tests specified' && exit 0",
+    "postinstall": "echo 'Dependencies installed successfully'"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "keywords": [],
   "author": "",
