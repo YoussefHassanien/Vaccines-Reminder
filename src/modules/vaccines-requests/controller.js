@@ -4,6 +4,7 @@ import {
   fetchUserVaccineRequests,
   deleteUserVaccineRequest,
   changeNurseSlotIsBooked,
+  changeVaccineRequestStatus,
 } from "./services.js";
 
 /**
@@ -104,6 +105,28 @@ export const cancelUserVaccineRequest = async (req, res) => {
 
     const { statusCode, message, data } = await deleteUserVaccineRequest(
       vaccineRequest._id
+    );
+
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
+      error: error.error,
+    });
+  }
+};
+
+export const modifyVaccineRequestStatus = async (req, res) => {
+  const { vaccineRequestId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const { statusCode, message, data } = await changeVaccineRequestStatus(
+      vaccineRequestId,
+      status
     );
 
     return res.status(statusCode).json({

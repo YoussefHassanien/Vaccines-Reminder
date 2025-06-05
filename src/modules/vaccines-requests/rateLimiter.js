@@ -67,3 +67,20 @@ export const cancelUserVaccineRequestLimiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skipSuccessfulRequests: false, // Don't skip counts for successful requests
 });
+
+/**
+ * Rate limiter for vaccine request status modification
+ * Restricts users to 30 vaccine request cancelations per 1 minutes
+ * This prevents abuse of the vaccine request status modification endpoint while allowing legitimate requests
+ */
+export const modifyVaccineRequestStatusLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30, // 30 requests per 1 minute
+  message: {
+    message:
+      "Too many vaccine request cancelations. Please try again after 1 minute.",
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipSuccessfulRequests: false, // Don't skip counts for successful requests
+});

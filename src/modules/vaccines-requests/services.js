@@ -4,6 +4,7 @@ import {
   getUserVaccineRequests,
   removeUserVaccineRequest,
   updateNurseSlotIsBooked,
+  updateVaccineRequestStatus,
 } from "./repository.js";
 
 /**
@@ -44,7 +45,13 @@ export const fetchAllVaccinesRequests = async () => {
       data: vaccineRequests,
     };
   } catch (error) {
-    return {
+    if (error.message.include("not found")) {
+      throw {
+        statusCode: 404,
+        message: error.message,
+      };
+    }
+    throw {
       statusCode: 500,
       message: "Error fetching vaccine requests",
       error: error.message,
@@ -116,6 +123,33 @@ export const changeNurseSlotIsBooked = async (nurseSlotId) => {
     throw {
       statusCode: 500,
       message: "Error changing nurse slot isBooked!",
+      error: error.message,
+    };
+  }
+};
+
+export const changeVaccineRequestStatus = async (vaccineRequestId, status) => {
+  try {
+    const vaccineRequest = await updateVaccineRequestStatus(
+      vaccineRequestId,
+      status
+    );
+
+    return {
+      statusCode: 200,
+      message: "Vaccine request status is updated successfully",
+      data: vaccineRequest,
+    };
+  } catch (error) {
+    if (error.message.includes("not found")) {
+      throw {
+        statusCode: 404,
+        message: error.message,
+      };
+    }
+    throw {
+      statusCode: 500,
+      message: "Error updating vaccine request status",
       error: error.message,
     };
   }

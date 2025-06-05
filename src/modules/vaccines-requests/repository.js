@@ -28,9 +28,51 @@ export const addNewVaccineRequest = async (vaccineRequestData) => {
  */
 export const getAllVaccineRequests = async () => {
   try {
-    const vaccineRequests = await VaccineRequest.find();
+    const vaccineRequests = await VaccineRequest.find()
+      .select("-__v")
+      .populate({
+        path: "vaccineId",
+        select: "name _id",
+      })
+      .populate({
+        path: "nurseId",
+        select: "hospitalName fName lName _id",
+        model: "Nurse",
+      })
+      .populate({
+        path: "childId",
+        select: "name _id",
+      });
 
-    return vaccineRequests;
+    if (!vaccineRequests || vaccineRequests.length === 0) {
+      throw new Error("Vaccine requests not found!");
+    }
+
+    const formattedVaccineRequests = vaccineRequests.map((vr) => {
+      return {
+        _id: vr._id,
+        status: vr.status,
+        vaccinationDate: vr.vaccinationDate,
+        governorate: vr.governorate,
+        city: vr.city,
+        street: vr.street,
+        vaccine: vr.vaccineId._id
+          ? { _id: vr.vaccineId._id, name: vr.vaccineId.name }
+          : null,
+        nurse: vr.nurseId
+          ? {
+              _id: vr.nurseId._id,
+              name: `${vr.nurseId.fName} ${vr.nurseId.lName}`,
+              hospitalName: vr.nurseId.hospitalName,
+            }
+          : null,
+        child: vr.childId
+          ? { _id: vr.childId._id, name: vr.childId.name }
+          : null,
+      };
+    });
+
+    return formattedVaccineRequests;
   } catch (error) {
     console.error("Error fetching vaccine requests", error);
     throw error;
@@ -41,16 +83,20 @@ export const getUserVaccineRequests = async (userId) => {
   try {
     const vaccineRequests = await VaccineRequest.find({ parentId: userId })
       .select(
-        "status vaccinationDate governorate city street nurseId vaccineId"
+        "status vaccinationDate governorate city street nurseId vaccineId childId"
       )
       .populate({
         path: "vaccineId",
-        select: "name",
+        select: "name _id",
       })
       .populate({
         path: "nurseId",
-        select: "hospitalName fName lName",
+        select: "hospitalName fName lName _id",
         model: "Nurse",
+      })
+      .populate({
+        path: "childId",
+        select: "name _id",
       });
 
     if (!vaccineRequests || vaccineRequests.length === 0) {
@@ -58,17 +104,26 @@ export const getUserVaccineRequests = async (userId) => {
     }
 
     const formattedVaccineRequests = vaccineRequests.map((vr) => {
-      const vrObject = vr.toObject();
-
       return {
-        _id: vrObject._id,
-        status: vrObject.status,
-        vaccinationDate: vrObject.vaccinationDate,
-        governorate: vrObject.governorate,
-        city: vrObject.city,
-        street: vrObject.street,
-        vaccine: vrObject.vaccineId,
-        nurse: vrObject.nurseId,
+        _id: vr._id,
+        status: vr.status,
+        vaccinationDate: vr.vaccinationDate,
+        governorate: vr.governorate,
+        city: vr.city,
+        street: vr.street,
+        vaccine: vr.vaccineId._id
+          ? { _id: vr.vaccineId._id, name: vr.vaccineId.name }
+          : null,
+        nurse: vr.nurseId
+          ? {
+              _id: vr.nurseId._id,
+              name: `${vr.nurseId.fName} ${vr.nurseId.lName}`,
+              hospitalName: vr.nurseId.hospitalName,
+            }
+          : null,
+        child: vr.childId
+          ? { _id: vr.childId._id, name: vr.childId.name }
+          : null,
       };
     });
 
@@ -104,6 +159,27 @@ export const updateNurseSlotIsBooked = async (nurseSlotId) => {
     }
 
     return formatMongoDbObjects(nurseSlot);
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const updateVaccineRequestStatus = async (vaccineRequestId, status) => {
+  try {
+    const vaccineRequest = await VaccineRequest.findByIdAndUpdate(
+      vaccineRequestId,
+      { status },
+      { new: true, runValidators: true }
+    );
+
+    if (!vaccineRequest) {
+      throw new Error(
+        `Vaccine request with id: ${vaccineRequestId} not found!`
+      );
+    }
+
+    return vaccineRequest;
   } catch (error) {
     console.error(error);
     throw error;
