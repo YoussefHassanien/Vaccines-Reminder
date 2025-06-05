@@ -5,16 +5,19 @@ import {
   retrieveVaccineRequestsLimiter,
   retrieveUserVaccineRequestsLimiter,
   cancelUserVaccineRequestLimiter,
+  modifyVaccineRequestStatusLimiter,
 } from "./rateLimiter.js";
 import {
   createVaccineRequest,
   retrieveVaccineRequests,
   retrieveUserVaccineRequests,
   cancelUserVaccineRequest,
+  modifyVaccineRequestStatus,
 } from "./controller.js";
 import {
   createVaccineRequestValidator,
   cancelUserVaccineRequestValidator,
+  modifyVaccineRequestStatusValidator,
 } from "./validation.js";
 import {
   isAuthenticated,
@@ -50,6 +53,14 @@ vaccineRequestsRouter.get(
   isAuthenticated,
   isAuthorized,
   retrieveVaccineRequests
+);
+
+vaccineRequestsRouter.patch(
+  "/status/admin/:vaccineRequestId",
+  modifyVaccineRequestStatusLimiter,
+  isAuthenticated,
+  isAuthorized,
+  modifyVaccineRequestStatus
 );
 
 export default vaccineRequestsRouter;

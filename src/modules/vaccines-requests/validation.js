@@ -178,3 +178,25 @@ export const cancelUserVaccineRequestValidator = [
 
   validatorMiddleware,
 ];
+
+export const modifyVaccineRequestStatusValidator = [
+  param("vaccineRequestId")
+    .notEmpty()
+    .withMessage("Vaccine request id is required")
+    .bail()
+    .isMongoId()
+    .withMessage("Invalid vaccine request id format"),
+
+  body("status")
+    .notEmpty()
+    .withMessage("Vaccine request status is required")
+    .bail()
+    .isIn(["Pending", "Confirmed", "Rejected", "Delivered"])
+    .withMessage(
+      "Vaccine request status value is not valid, Status can only be Pending, Confirmed, Rejected, and Delivered"
+    )
+    .bail()
+    .escape(),
+
+  validatorMiddleware,
+];

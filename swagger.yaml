@@ -7125,6 +7125,248 @@ paths:
                     example: "Server error"
       security:
         - BearerAuth: []
+    
+  /api/vaccine-requests/status/admin/{vaccineRequestId}:
+    patch:
+      tags:
+        - Vaccine Requests
+      summary: Modify vaccine request status (Admin only)
+      description: >
+        Update the status of a vaccine request. Admin can change status between Pending, Confirmed, Rejected, and Delivered.
+        When changing to "Confirmed", a nurse must be assigned to the request.
+        When changing from "Confirmed" to "Rejected", the associated nurse slot is automatically unbooked.
+        Status transitions are validated to ensure proper workflow.
+      parameters:
+        - in: path
+          name: vaccineRequestId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: MongoDB ObjectId of the vaccine request to modify
+          example: "683d5d2efda5e8f94840f9b5"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: ["Pending", "Confirmed", "Rejected", "Delivered"]
+                  description: New status for the vaccine request
+                  example: "Confirmed"
+      responses:
+        "200":
+          description: Vaccine request status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine request status updated from 'Pending' to 'Confirmed' successfully"
+                  data:
+                    type: object
+                    properties:
+                      vaccineRequest:
+                        allOf:
+                          - $ref: "#/components/schemas/VaccineRequest"
+                          - type: object
+                            properties:
+                              status:
+                                type: string
+                                example: "Confirmed"
+                      previousStatus:
+                        type: string
+                        example: "Pending"
+                      newStatus:
+                        type: string
+                        example: "Confirmed"
+                      updatedBy:
+                        type: string
+                        format: uuid
+                        example: "60d21b4667d0d8992e610c84"
+                  error:
+                    type: object
+                    nullable: true
+              examples:
+                statusUpdated:
+                  summary: "Successfully updated vaccine request status"
+                  value:
+                    message: "Vaccine request status updated from 'Pending' to 'Confirmed' successfully"
+                    data:
+                      vaccineRequest:
+                        _id: "683d5d2efda5e8f94840f9b5"
+                        parentId: "68055a4228a57b56dc11b7df"
+                        childId: "680cde050f7a995dadea207a"
+                        vaccineId: "6803e59f5cfbd3f8d54aaec9"
+                        status: "Confirmed"
+                        vaccinationDate: "2025-06-10T08:00:00.000Z"
+                        governorate: "Cairo"
+                        city: "Nasr City"
+                        street: "Abbas El-Akkad Street"
+                        buildingNumber: 42
+                        apartmentNumber: 5
+                        phoneNumber: "+201015411320"
+                        nurseId: "680cde050f7a995dadea207b"
+                        nurseSlotId: "680cde050f7a995dadea207c"
+                        createdAt: "2025-06-02T08:13:34.492Z"
+                        updatedAt: "2025-06-03T10:35:45.890Z"
+                      previousStatus: "Pending"
+                      newStatus: "Confirmed"
+                      updatedBy: "60d21b4667d0d8992e610c84"
+                    error: null
+        "400":
+          description: Invalid input, validation failed, or invalid status transition
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validation Failed!"
+                  errors:
+                    type: object
+                    properties:
+                      vaccineRequestId:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Vaccine request with id: 683d5d2efda5e8f94840f9b5 not found"
+                          param:
+                            type: string
+                            example: "vaccineRequestId"
+                          location:
+                            type: string
+                            example: "params"
+                      status:
+                        type: object
+                        properties:
+                          msg:
+                            type: string
+                            example: "Cannot change status from 'Delivered' to 'Pending'. Valid transitions from 'Delivered' are: None"
+                          param:
+                            type: string
+                            example: "status"
+                          location:
+                            type: string
+                            example: "body"
+              examples:
+                invalidId:
+                  summary: "Invalid vaccine request ID format"
+                  value:
+                    message: "Validation Failed!"
+                    errors:
+                      vaccineRequestId:
+                        msg: "Invalid vaccine request id format"
+                        param: "vaccineRequestId"
+                        location: "params"
+                invalidStatus:
+                  summary: "Invalid status value"
+                  value:
+                    message: "Validation Failed!"
+                    errors:
+                      status:
+                        msg: "Vaccine request status value is not valid, Status can only be Pending, Confirmed, Rejected, and Delivered"
+                        param: "status"
+                        location: "body"
+                invalidTransition:
+                  summary: "Invalid status transition"
+                  value:
+                    message: "Validation Failed!"
+                    errors:
+                      status:
+                        msg: "Cannot change status from 'Delivered' to 'Pending'. Valid transitions from 'Delivered' are: None"
+                        param: "status"
+                        location: "body"
+                deliveryBeforeDate:
+                  summary: "Cannot mark as delivered before vaccination date"
+                  value:
+                    message: "Validation Failed!"
+                    errors:
+                      status:
+                        msg: "Cannot mark vaccine as delivered before the vaccination date"
+                        param: "status"
+                        location: "body"
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "403":
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "fail"
+                  message:
+                    type: string
+                    example: "You are not allowed to access this route"
+        "404":
+          description: Vaccine request not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Vaccine request with id: 683d5d2efda5e8f94840f9b5 not found"
+              examples:
+                requestNotFound:
+                  summary: "Vaccine request not found"
+                  value:
+                    message: "Vaccine request with id: 683d5d2efda5e8f94840f9b5 not found"
+        "429":
+          description: Too many status modification requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Too many vaccine request status modifications. Please try again after a minute."
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating vaccine request status"
+                  error:
+                    type: string
+                    example: "Server error"
+              examples:
+                serverError:
+                  summary: "Internal server error"
+                  value:
+                    message: "Error updating vaccine request status"
+                    error: "Database connection failed"
+      security:
+        - BearerAuth: []
 
   /api/child/:
     post:
