@@ -28,14 +28,61 @@ export const createProductValidator = [
 
   // Description validation
   body("description")
-    .trim()
     .notEmpty()
-    .withMessage("Product description is required")
+    .withMessage("Description is required")
     .bail()
-    .isLength({ min: 20, max: 1000 })
-    .withMessage("Description must be between 20 and 1000 characters")
+    .isArray()
+    .withMessage("Description must be an array")
     .bail()
-    .escape(),
+    .customSanitizer((value) => {
+      // Trim and escape each feature if it's a string
+      if (!Array.isArray(value)) return value;
+
+      return value.map((feature) => {
+        if (typeof feature === "string") {
+          // First trim the string
+          const trimmed = feature.trim();
+          // Then escape it for XSS protection
+          // This replaces <, >, &, ', " and / with HTML entities
+          return trimmed
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#x27;")
+            .replace(/\//g, "&#x2F;");
+        }
+        return feature;
+      });
+    })
+    .custom((value) => {
+      if (value.length < 1) {
+        return Promise.reject(
+          "Product must have at least one description bullet point"
+        );
+      }
+      if (value.length > 10) {
+        return Promise.reject(
+          "Product can have maximum 10 description bullet points"
+        );
+      }
+
+      // Check each feature length
+      for (const feature of value) {
+        if (typeof feature !== "string") {
+          return Promise.reject(
+            "Each description bullet point must be a string"
+          );
+        }
+        if (feature.length < 3 || feature.length > 500) {
+          return Promise.reject(
+            "Each description bullet point must be between 3 and 500 characters"
+          );
+        }
+      }
+
+      return true;
+    }),
 
   // Price validation
   body("price")
@@ -114,8 +161,8 @@ export const createProductValidator = [
     .isString()
     .withMessage("Required age must be a string")
     .bail()
-    .isLength({ min: 5, max: 30 })
-    .withMessage("Required age must be between 5 and 30 characters")
+    .isLength({ min: 5, max: 100 })
+    .withMessage("Required age must be between 5 and 100 characters")
     .bail()
     .escape(),
 

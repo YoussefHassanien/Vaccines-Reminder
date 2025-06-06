@@ -143,9 +143,6 @@ export const bookSlot = async (slotId, vaccineId, nurseId) => {
     if (existingRequest.status !== "Pending") {
       throw new Error("Vaccine request is not in pending status");
     }
-    if (existingRequest.date !== slot.date) {
-      throw new Error("Vaccine request date does not match slot date");
-    }
     existingRequest.nurseId = slot.nurseId;
 
     existingRequest.nurseSlotId = slot._id;

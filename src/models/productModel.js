@@ -15,11 +15,34 @@ const productSchema = new mongoose.Schema(
       min: [1, "Price must be a postive number"],
     },
     description: {
-      type: String,
-      trim: true,
+      type: [String],
       required: [true, "Description must be provided"],
-      minlength: [20, "Description must be at least 20 characters"],
-      maxlenght: [1000, "Description must be of 1000 characters maximum"],
+      validate: [
+        {
+          // Validate minimum array length
+          validator: function (val) {
+            return val.length >= 1;
+          },
+          message: "Product must have at least one description bullet point",
+        },
+        {
+          // Validate maximum array length
+          validator: function (val) {
+            return val.length <= 10;
+          },
+          message: "Product can have maximum 10 description bullet points",
+        },
+        {
+          // Validate each string in the array
+          validator: function (val) {
+            return val.every(
+              (feature) => feature.length >= 3 && feature.length <= 500
+            );
+          },
+          message:
+            "Each description bullet point must be between 3 and 500 characters",
+        },
+      ],
     },
     image: {
       type: String,
@@ -76,7 +99,7 @@ const productSchema = new mongoose.Schema(
       trim: true,
       required: [true, "Required age information must be provided"],
       minlength: [5, "Required age must be at least 5 characters"],
-      maxlength: [30, "Required age must be of 30 characters maximum"],
+      maxlength: [100, "Required age must be of 30 characters maximum"],
     },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
