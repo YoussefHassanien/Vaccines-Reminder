@@ -20,7 +20,7 @@ export const startVaccineReminderJob = () => {
         const result = await vaccineReminder();
 
         console.log(
-          `[${new Date().toISOString()}] Vaccine reminder job completed successfully`
+          `✅ [${new Date().toISOString()}] Vaccine reminder job completed successfully`
         );
 
         if (result.errors.length > 0) {
@@ -31,7 +31,7 @@ export const startVaccineReminderJob = () => {
         }
       } catch (error) {
         console.error(
-          `[${new Date().toISOString()}] Error in vaccine reminder job:`,
+          `❌ [${new Date().toISOString()}] Error in vaccine reminder job:`,
           error
         );
       }
@@ -42,7 +42,7 @@ export const startVaccineReminderJob = () => {
   );
 
   console.log(
-    "Vaccine reminder cron job scheduled to run daily at 12:00 AM UTC"
+    "⏳ Vaccine reminder cron job scheduled to run daily at 12:00 AM UTC"
   );
   return job;
 };
@@ -56,13 +56,13 @@ export const runVaccineReminderNow = async () => {
     const result = await vaccineReminder();
 
     console.log(
-      `[${new Date().toISOString()}] Manual vaccine reminder job completed`
+      `✅ [${new Date().toISOString()}] Manual vaccine reminder job completed`
     );
 
     return result;
   } catch (error) {
     console.error(
-      `[${new Date().toISOString()}] Error in manual vaccine reminder job:`,
+      `❌ [${new Date().toISOString()}] Error in manual vaccine reminder job:`,
       error
     );
     throw error;

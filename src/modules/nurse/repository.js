@@ -243,10 +243,13 @@ export const maintainSlots = async () => {
     const nurses = await Nurse.find({});
 
     for (const nurse of nurses) {
-      // Check if nurse has enough future slots
+      // Set dates properly for consistent comparisons
       const today = new Date();
-      const twoWeeksFromToday = new Date();
+      today.setHours(0, 0, 0, 0); // Start of today
+
+      const twoWeeksFromToday = new Date(today);
       twoWeeksFromToday.setDate(today.getDate() + 14);
+      twoWeeksFromToday.setHours(0, 0, 0, 0); // Start of the 15th day
 
       const existingSlots = await NurseSlot.countDocuments({
         nurseId: nurse._id,
@@ -260,20 +263,26 @@ export const maintainSlots = async () => {
       const expectedSlots = 8 * 14;
 
       if (existingSlots < expectedSlots) {
+        const completionPercentage = Math.round(
+          (existingSlots / expectedSlots) * 100
+        );
         console.log(
-          `🔧 Nurse ${nurse._id} has ${existingSlots}/${expectedSlots} slots. Creating missing slots...`
+          `🔧 Nurse ${nurse.fName} ${nurse.lName}: ${nurse._id} has ${existingSlots}/${expectedSlots} slots (${completionPercentage}%). Creating missing slots...`
         );
         await createMissingSlots(nurse._id, today, twoWeeksFromToday);
+      } else {
+        console.log(
+          `✅ Nurse ${nurse.fName} ${nurse.lName}: ${nurse._id} has sufficient slots (${existingSlots}/${expectedSlots})`
+        );
       }
     }
 
-    // Clean up old slots (older than yesterday)
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(23, 59, 59, 999);
+    // Clean up old slots (more reliable approach)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
     const deletedSlots = await NurseSlot.deleteMany({
-      date: { $lt: yesterday },
+      date: { $lt: startOfToday },
       isBooked: false,
     });
 

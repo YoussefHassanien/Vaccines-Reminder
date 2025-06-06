@@ -46,20 +46,6 @@ export const signupValidator = [
         }
       })
     ),
-  check("nationalIdNumer")
-    .notEmpty()
-    .withMessage("SSN is required")
-    .isLength({ min: 14, max: 14 })
-    .withMessage("SSN must be exactly 14 digits")
-    .matches(/^\d+$/)
-    .withMessage("SSN must be numeric")
-    .custom((value) =>
-      User.findOne({ nationalIdNumer: value }).then((user) => {
-        if (user) {
-          return Promise.reject("SSN already exists");
-        }
-      })
-    ),
   check("birthDate")
     .notEmpty()
     .withMessage("date of birth is required")
