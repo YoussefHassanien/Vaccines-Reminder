@@ -45,7 +45,7 @@ export const fetchAllVaccinesRequests = async () => {
       data: vaccineRequests,
     };
   } catch (error) {
-    if (error.message.include("not found")) {
+    if (error.message.includes("not found")) {
       throw {
         statusCode: 404,
         message: error.message,
