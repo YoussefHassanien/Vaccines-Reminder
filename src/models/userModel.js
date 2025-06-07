@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const userSchema = new mongoose.Schema(
   {
@@ -76,6 +77,23 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Address appartment number must be provided"],
     },
+    // Forgot password fields
+    forgotPasswordOTP: {
+      type: String,
+      default: null,
+    },
+    forgotPasswordOTPExpires: {
+      type: Date,
+      default: null,
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordTokenExpires: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -93,6 +111,11 @@ userSchema.pre("save", function (next) {
 userSchema.methods.comparePasswords = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
+userSchema.methods.createPasswordResetOTP = function () {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  this.passwordResetOTP = crypto.createHash("sha256").update(otp).digest("hex");
+  this.passwordResetOTPExpiresAt = Date.now() + 10 * 60 * 1000;
+  return otp;
+};
 
-const User = mongoose.model("User", userSchema);
-export default User;
+export default mongoose.model("User", userSchema);

@@ -4,6 +4,9 @@ import {
   signupService,
   loginService,
   updatePasswordService,
+  forgotPasswordService,
+  verifyForgotPasswordOTPService,
+  resetPasswordService,
 } from "./services.js";
 
 export const signup = asyncHandler(async (req, res, next) => {
@@ -33,3 +36,37 @@ export const allowedTo = (...roles) =>
     allowedToService(req.user, roles, next);
     next();
   });
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const result = await forgotPasswordService(email);
+
+  res.status(200).json({
+    status: result.status,
+    message: result.message,
+  });
+});
+
+export const verifyForgotPasswordOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  const result = await verifyForgotPasswordOTPService(email, otp);
+
+  res.status(200).json({
+    status: result.status,
+    message: result.message,
+    data: {
+      resetToken: result.resetToken,
+      expiresIn: result.expiresIn,
+    },
+  });
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { resetToken, newPassword } = req.body;
+  const result = await resetPasswordService(resetToken, newPassword);
+
+  res.status(200).json({
+    status: result.status,
+    message: result.message,
+  });
+});
