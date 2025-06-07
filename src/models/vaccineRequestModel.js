@@ -14,6 +14,18 @@ const vaccineRequestSchema = new mongoose.Schema(
       required: [true, "Child id is required"],
       index: true,
     },
+    nurseId: {
+      type: mongoose.Schema.ObjectId,
+      ref: "Nurse",
+      default: null,
+    },
+
+    nurseSlotId: {
+      type: mongoose.Schema.ObjectId,
+      ref: "NurseSlot",
+      default: null,
+    },
+
     vaccineId: {
       type: mongoose.Schema.ObjectId,
       ref: "Vaccine",
@@ -22,7 +34,7 @@ const vaccineRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Confirmed", "Rejected"],
+      enum: ["Pending", "Confirmed", "Rejected", "Delivered"],
       default: "Pending",
     },
     vaccinationDate: {

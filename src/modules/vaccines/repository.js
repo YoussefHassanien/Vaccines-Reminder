@@ -41,3 +41,23 @@ export const getAllVaccinesForParent = async () => {
     throw error;
   }
 };
+
+/**
+ * Delete a vaccine from the database
+ * @param {String} vaccineId - MongoDB ObjectId of the vaccine
+ * @returns {Promise<Object>} Deleted vaccine document
+ */
+export const removeVaccine = async (vaccineId) => {
+  try {
+    const deletedVaccine = await Vaccine.findByIdAndDelete(vaccineId);
+
+    if (!deletedVaccine) {
+      throw new Error(`Vaccine with id: ${vaccineId} not found`);
+    }
+
+    return formatMongoDbObjects(deletedVaccine);
+  } catch (error) {
+    console.error(`Error deleting vaccine with id: ${vaccineId}`, error);
+    throw error;
+  }
+};

@@ -100,6 +100,7 @@ export const updateUserPasswordById = async (id, newPassword) => {
   }
 };
 
+
 /**
  * check forgot password OTP
  * @param {string} userId
@@ -273,3 +274,4 @@ export const clearResetToken = async (userId) => {
     throw error;
   }
 };
+

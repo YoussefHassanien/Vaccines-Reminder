@@ -24,6 +24,7 @@ const authRouter = Router();
 authRouter.post("/signup", signup);
 authRouter.post("/login", login);
 
+
 // Update Password route
 authRouter.put(
   "/update-password",
@@ -32,9 +33,11 @@ authRouter.put(
   updatePassword
 );
 
+
 // Forgot Password routes
 authRouter.post("/forgot-password", forgotPasswordValidator, forgotPassword);
 authRouter.post("/verify-otp", verifyOTPValidator, verifyForgotPasswordOTP);
 authRouter.post("/reset-password", resetPasswordValidator, resetPassword);
+
 
 export default authRouter;

@@ -90,10 +90,10 @@ export const addCart = async (cartData) => {
  * @param {String} cartId - MongoDB ObjectId of the cart
  * @returns {Promise<Object|null>} The cart or null if not found
  */
-export const getUserCartDetails = async (userId, cartId) => {
+export const getUserPendingCartDetails = async (userId) => {
   try {
     // Find carts for this user
-    const cart = await Cart.findOne({ userId, status: "Pending", _id: cartId })
+    const cart = await Cart.findOne({ userId, status: "Pending" })
       .select("-__v -updatedAt -createdAt")
       .lean();
 
@@ -112,9 +112,14 @@ export const getUserCartDetails = async (userId, cartId) => {
 export const getUserById = async (userId) => {
   try {
     const user = await User.findById(userId).lean();
+
+    if (!user) {
+      throw new Error(`User of id: ${userId} not found`);
+    }
+
     return user;
   } catch (error) {
-    console.error(`Error finding user of user id: ${userId}`, error);
+    console.error(error);
     throw error;
   }
 };
@@ -427,32 +432,17 @@ export const updateCartStatus = async (cartId, userId) => {
   }
 };
 
-export const getUserPendingCart = async (userId) => {
-  try {
-    const cart = await Cart.findOne({ userId, status: "Pending" });
-
-    if (!cart) {
-      throw new Error(`Pending cart with user id: ${userId} not found`);
-    }
-
-    return formatMongoDbObjects(cart);
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-};
-
 /**
  * Get user's carts with status "Confirmed" or "Waiting for cash payment"
  * @param {String} userId - MongoDB ObjectId of the user
  * @returns {Promise<Array>} Array of user's confirmed and waiting carts
  */
-export const getUserConfirmedAndWaitingCarts = async (userId) => {
+export const getUserOnlinePaidAndWaitingCarts = async (userId) => {
   try {
     // Get user's carts with "Confirmed" or "Waiting for cash payment" status
     const carts = await Cart.find({
       userId,
-      status: { $in: ["Confirmed", "Waiting for cash payment"] },
+      status: { $in: ["Confirmed", "Waiting for cash payment", "Delivered"] },
     })
       .sort({ updatedAt: -1 })
       .select("-__v -createdAt -updatedAt") // Exclude unwanted fields
@@ -464,6 +454,79 @@ export const getUserConfirmedAndWaitingCarts = async (userId) => {
       `Error fetching confirmed and waiting carts for user id: ${userId}`,
       error
     );
+    throw error;
+  }
+};
+
+/**
+ * Get all users' carts for admin (all statuses)
+ * @returns {Promise<Array>} Array of all carts from all users
+ */
+export const getAllUsersCarts = async () => {
+  try {
+    // Get all carts from all users, sorted by most recent
+    const carts = await Cart.find()
+      .populate({
+        path: "userId",
+        select: "fName lName email phoneNumber",
+      })
+      .sort({ updatedAt: -1 })
+      .select("-__v") // Exclude unwanted fields
+      .lean(); // Get plain objects
+
+    if (!carts || carts.length === 0) {
+      throw new Error("Carts not found");
+    }
+
+    return carts;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const adminUpdateCartStatus = async (cartId, status) => {
+  try {
+    const cart = await Cart.findByIdAndUpdate(
+      cartId,
+      { status: status },
+      {
+        new: true,
+        runValidators: true,
+      }
+    ).select("-__v");
+
+    if (!cart) {
+      throw new Error(`Cart with id: ${cartId} not found`);
+    }
+
+    return cart;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const updateCartPaymentType = async (cartId, userId, paymentType) => {
+  try {
+    const cart = await Cart.findOne({
+      _id: cartId,
+      userId,
+      status: "Pending",
+    });
+
+    if (!cart) {
+      throw new Error(
+        `Cart with id: ${cartId} and user id: ${userId} not found`
+      );
+    }
+
+    cart.paymentType = paymentType;
+    await cart.save();
+
+    return formatMongoDbObjects(cart);
+  } catch (error) {
+    console.error(error);
     throw error;
   }
 };

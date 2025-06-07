@@ -20,7 +20,7 @@ export const createProductLimiter = rateLimit({
  * Rate limiter for paginated products endpoint
  * Limits requests to 20 per 1 minute per IP address
  */
-export const getPaginatedProductsLimiter = rateLimit({
+export const getAllProductsLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   limit: 20,
   standardHeaders: true,

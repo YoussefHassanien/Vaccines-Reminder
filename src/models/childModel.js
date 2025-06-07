@@ -26,7 +26,18 @@ const childSchema = new mongoose.Schema(
     },
     bloodType: {
       type: String,
-      enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+      enum: [
+        "A+",
+        "A-",
+        "B+",
+        "B-",
+        "AB+",
+        "AB-",
+        "O+",
+        "O-",
+        "I don't know",
+        "Prefer not to say",
+      ],
       required: [true, "Blood type is required"],
     },
     ssn: {

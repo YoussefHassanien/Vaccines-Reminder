@@ -4,19 +4,18 @@ import multerUploadHandler from "../../../config/multer.js";
 import multerErrorHandler from "../../middlewares/multerErrorHandler.js";
 import {
   createProductLimiter,
-  getPaginatedProductsLimiter,
+  getAllProductsLimiter,
   productQuantityUpdateLimiter,
   productDeletionLimiter,
 } from "./rateLimiter.js";
 import {
   createNewProduct,
-  retrievePaginatedProducts,
+  retrieveAllProducts,
   modifyProductQuantity,
   eraseProduct,
 } from "./controller.js";
 import {
   createProductValidator,
-  getPaginatedProductsValidator,
   productQuantityUpdateValidator,
   productDeletionValidator,
 } from "./validation.js";
@@ -39,13 +38,7 @@ productsRouter.post(
   createNewProduct
 );
 
-productsRouter.get(
-  "/",
-  getPaginatedProductsLimiter,
-  isAuthenticated,
-  getPaginatedProductsValidator,
-  retrievePaginatedProducts
-);
+productsRouter.get("/", getAllProductsLimiter, retrieveAllProducts);
 
 productsRouter.patch(
   "/admin/update-quantity/:id",

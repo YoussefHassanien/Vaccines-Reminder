@@ -15,8 +15,15 @@ const vaccineSchema = new mongoose.Schema(
       enum: {
         values: [
           "No specific age required",
+          "24 hours",
+          "6 weeks",
+          "10 weeks",
+          "14 weeks",
+          "2 months",
           "3 months",
+          "4 months",
           "6 months",
+          "8 months",
           "9 months",
           "1 year",
           "1 year and 3 months",
@@ -31,6 +38,8 @@ const vaccineSchema = new mongoose.Schema(
           "3 years and 6 months",
           "3 years and 9 months",
           "4 years",
+          "9 years",
+          "9 years and 3 months",
         ],
         message:
           "'{VALUE}' is not a valid age requirement. Please choose from the predefined age options.",
@@ -40,7 +49,7 @@ const vaccineSchema = new mongoose.Schema(
       type: String,
       required: [true, "Description must be provided"],
       trim: true,
-      minlength: [20, "Description must be at least 20 characters"],
+      minlength: [10, "Description must be at least 10 characters"],
       maxlength: [1000, "Description must be of 1000 characters maximum"],
     },
     price: {

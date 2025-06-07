@@ -1,4 +1,11 @@
-import { insertVaccineRequest, fetchAllVaccinesRequests } from "./services.js";
+import {
+  insertVaccineRequest,
+  fetchAllVaccinesRequests,
+  fetchUserVaccineRequests,
+  deleteUserVaccineRequest,
+  changeNurseSlotIsBooked,
+  changeVaccineRequestStatus,
+} from "./services.js";
 
 /**
  * Creates a new vaccine request
@@ -64,6 +71,71 @@ export const retrieveVaccineRequests = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: error.message || "Error retrieving vaccine requests",
+      error: error.error,
+    });
+  }
+};
+
+export const retrieveUserVaccineRequests = async (req, res) => {
+  const user = req.user;
+
+  try {
+    const { statusCode, message, data } = await fetchUserVaccineRequests(
+      user._id
+    );
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
+      error: error.error,
+    });
+  }
+};
+
+export const cancelUserVaccineRequest = async (req, res) => {
+  const vaccineRequest = req.vaccineRequest;
+
+  try {
+    if (vaccineRequest.status === "Confirmed") {
+      await changeNurseSlotIsBooked(vaccineRequest.nurseSlotId);
+    }
+
+    const { statusCode, message, data } = await deleteUserVaccineRequest(
+      vaccineRequest._id
+    );
+
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
+      error: error.error,
+    });
+  }
+};
+
+export const modifyVaccineRequestStatus = async (req, res) => {
+  const { vaccineRequestId } = req.params;
+  const { status } = req.body;
+
+  try {
+    const { statusCode, message, data } = await changeVaccineRequestStatus(
+      vaccineRequestId,
+      status
+    );
+
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
       error: error.error,
     });
   }

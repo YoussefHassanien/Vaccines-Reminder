@@ -50,11 +50,6 @@ const userSchema = new mongoose.Schema(
       enum: ["parent", "admin"],
       default: "parent",
     },
-    nationalIdNumer: {
-      type: Number,
-      required: [true, "National id must be provided"],
-      unique: [true, "National id number must be unique"],
-    },
     governorate: {
       type: String,
       required: [true, "Address governorate must be provided"],

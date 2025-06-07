@@ -15,11 +15,34 @@ const productSchema = new mongoose.Schema(
       min: [1, "Price must be a postive number"],
     },
     description: {
-      type: String,
-      trim: true,
+      type: [String],
       required: [true, "Description must be provided"],
-      minlength: [20, "Description must be at least 20 characters"],
-      maxlenght: [1000, "Description must be of 1000 characters maximum"],
+      validate: [
+        {
+          // Validate minimum array length
+          validator: function (val) {
+            return val.length >= 1;
+          },
+          message: "Product must have at least one description bullet point",
+        },
+        {
+          // Validate maximum array length
+          validator: function (val) {
+            return val.length <= 10;
+          },
+          message: "Product can have maximum 10 description bullet points",
+        },
+        {
+          // Validate each string in the array
+          validator: function (val) {
+            return val.every(
+              (feature) => feature.length >= 3 && feature.length <= 500
+            );
+          },
+          message:
+            "Each description bullet point must be between 3 and 500 characters",
+        },
+      ],
     },
     image: {
       type: String,
@@ -67,7 +90,7 @@ const productSchema = new mongoose.Schema(
               (feature) => feature.length >= 3 && feature.length <= 500
             );
           },
-          message: "Each feature must be between 3 and 250 characters",
+          message: "Each feature must be between 3 and 500 characters",
         },
       ],
     },
@@ -76,11 +99,26 @@ const productSchema = new mongoose.Schema(
       trim: true,
       required: [true, "Required age information must be provided"],
       minlength: [5, "Required age must be at least 5 characters"],
-      maxlength: [30, "Required age must be of 30 characters maximum"],
+      maxlength: [100, "Required age must be of 30 characters maximum"],
     },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Virtual field to populate reviews with user details
+productSchema.virtual("reviews", {
+  ref: "Product-Review", // Reference to ProductReview model
+  localField: "_id", // Product's _id field
+  foreignField: "productId", // ProductReview's productId field
+  options: {
+    sort: { createdAt: -1 }, // Sort by newest first
+    populate: {
+      path: "userId",
+      select: "fName lName email", // Only get first name, last name, and email
+      model: "User",
+    },
+  },
+});
 
 // Trim each feature string
 productSchema.pre("save", function (next) {

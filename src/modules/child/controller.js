@@ -7,6 +7,8 @@ import {
   getChildrenByUser,
 } from "./services.js";
 
+import { runVaccineReminderNow } from "../../../jobs/vaccinesRemindersJob.js";
+
 export const addNewChild = async (req, res, next) => {
   if (!req.file) {
     return res.status(400).json({ message: "birth certificate is required" });
@@ -27,7 +29,8 @@ export const addNewChild = async (req, res, next) => {
         message: "Could not retrieve child birth certificate optimized URL",
       });
     }
-    // Insert product into the database
+
+    // Insert child into the database
     const { status, message, data, error } = await addNewChildService({
       userId,
       name,
@@ -37,6 +40,9 @@ export const addNewChild = async (req, res, next) => {
       ssn,
       birthCertificate: optimizedChildBirthCertificateUrl,
     });
+
+    // Check if the new added child needs a reminder
+    await runVaccineReminderNow();
 
     return res.status(status).json({ message, data, error });
   } catch (error) {
