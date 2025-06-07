@@ -10,8 +10,8 @@ app.listen(process.env.PORT || 4000, async () => {
   try {
     console.log(`Server is listening to PORT: ${process.env.PORT || 4000}`);
     await connectToDatabase();
-    runMaintenanceNow();
-    // await runVaccineReminderNow();
+    setupCronJobs();
+    startVaccineReminderJob();
   } catch (error) {
     console.log(
       "Some fucntions are throwing errors but server is running successfully"

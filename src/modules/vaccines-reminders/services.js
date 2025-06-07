@@ -24,7 +24,7 @@ const sendVaccineReminderMessage = async (user, child, vaccine, date) => {
 
   try {
     await twilioClient.messages.create({
-      body: `*Baby-Guard Vaccine Reminder:* Dear *${user.name}* this is a kindly reminder that your child *${child.name}* has to take *${vaccine.name}* vaccine at *${date}*, This vaccine prevents *${vaccine.description}*`,
+      body: `*Baby-Guard Vaccine Reminder:* Dear *${user.name}* this is a kindly reminder that your child *${child.name}* has to take *${vaccine.name}* vaccine at *${date}*, This vaccine *${vaccine.description}*`,
       from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
       to: `whatsapp:${user.phoneNumber}`,
     });
@@ -78,12 +78,24 @@ const getDaysUntilVaccineEligible = (childBirthDate, vaccineRequiredAge) => {
         targetVaccinationDate.setDate(targetVaccinationDate.getDate() + 14 * 7); // 98 days
         break;
 
+      case "2 months":
+        targetVaccinationDate.setMonth(targetVaccinationDate.getMonth() + 2);
+        break;
+
       case "3 months":
         targetVaccinationDate.setMonth(targetVaccinationDate.getMonth() + 3);
         break;
 
+      case "4 months":
+        targetVaccinationDate.setMonth(targetVaccinationDate.getMonth() + 4);
+        break;
+
       case "6 months":
         targetVaccinationDate.setMonth(targetVaccinationDate.getMonth() + 6);
+        break;
+
+      case "8 months":
+        targetVaccinationDate.setMonth(targetVaccinationDate.getMonth() + 8);
         break;
 
       case "9 months":
@@ -175,6 +187,19 @@ const getDaysUntilVaccineEligible = (childBirthDate, vaccineRequiredAge) => {
         targetVaccinationDate.setFullYear(
           targetVaccinationDate.getFullYear() + 4
         );
+        break;
+
+      case "9 years":
+        targetVaccinationDate.setFullYear(
+          targetVaccinationDate.getFullYear() + 9
+        );
+        break;
+
+      case "9 years and 3 months":
+        targetVaccinationDate.setFullYear(
+          targetVaccinationDate.getFullYear() + 9
+        );
+        targetVaccinationDate.setMonth(targetVaccinationDate.getMonth() + 3);
         break;
 
       default:

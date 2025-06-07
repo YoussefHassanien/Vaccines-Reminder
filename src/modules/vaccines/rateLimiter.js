@@ -2,12 +2,12 @@ import rateLimit from "express-rate-limit";
 
 /**
  * Rate limiter for vaccine creation
- * Restricts providers to 15 vaccine creation requests per 5 minutes
+ * Restricts providers to 50 vaccine creation requests per 5 minutes
  * This prevents abuse of vaccine creation endpoint
  */
 export const createVaccineLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 15, // 15 requests per hour
+  windowMs: 5 * 60 * 1000, // 5 minutesS
+  max: 50, // 50 requests per 5 minutes
   message: {
     message:
       "Too many vaccine creation attempts. Please try again after an hour.",
