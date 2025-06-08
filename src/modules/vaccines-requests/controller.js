@@ -205,3 +205,4 @@ export const getVaccineCertificate = async (req, res) => {
     });
   }
 };
+

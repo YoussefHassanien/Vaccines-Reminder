@@ -38,12 +38,7 @@ productsRouter.post(
   createNewProduct
 );
 
-productsRouter.get(
-  "/",
-  getAllProductsLimiter,
-  isAuthenticated,
-  retrieveAllProducts
-);
+productsRouter.get("/", getAllProductsLimiter, retrieveAllProducts);
 
 productsRouter.patch(
   "/admin/update-quantity/:id",

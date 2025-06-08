@@ -17,6 +17,7 @@ import {
   modifyVaccineRequestStatus,
   uploadCertificateToVaccineRequest,
   getVaccineCertificate,
+
 } from "./controller.js";
 import {
   createVaccineRequestValidator,
@@ -67,6 +68,7 @@ vaccineRequestsRouter.patch(
   modifyVaccineRequestStatus
 );
 
+
 vaccineRequestsRouter.post(
   "/certificate/admin/:vaccineRequestId",
   isAuthenticated,
@@ -84,5 +86,6 @@ vaccineRequestsRouter.get(
   isAuthenticated,
   getVaccineCertificate
 );
+
 
 export default vaccineRequestsRouter;

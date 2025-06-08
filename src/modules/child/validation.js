@@ -17,7 +17,18 @@ export const createChildValidator = [
   check("bloodType")
     .notEmpty()
     .withMessage("blood type is required")
-    .isIn(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"])
+    .isIn([
+      "A+",
+      "A-",
+      "B+",
+      "B-",
+      "AB+",
+      "AB-",
+      "O+",
+      "O-",
+      "I don't know",
+      "Prefer not to say",
+    ])
     .withMessage("invalid blood type"),
   check("ssn")
     .notEmpty()

@@ -21,8 +21,8 @@ export const createVaccineValidator = [
     .notEmpty()
     .withMessage("Description must be provided")
     .bail()
-    .isLength({ min: 20, max: 1000 })
-    .withMessage("Description must be between 20 and 1000 characters")
+    .isLength({ min: 10, max: 1000 })
+    .withMessage("Description must be between 10 and 1000 characters")
     .bail()
     .trim()
     .escape(),
@@ -37,8 +37,11 @@ export const createVaccineValidator = [
       "6 weeks",
       "10 weeks",
       "14 weeks",
+      "2 months",
       "3 months",
+      "4 months",
       "6 months",
+      "8 months",
       "9 months",
       "1 year",
       "1 year and 3 months",
@@ -53,6 +56,8 @@ export const createVaccineValidator = [
       "3 years and 6 months",
       "3 years and 9 months",
       "4 years",
+      "9 years",
+      "9 years and 3 months",
     ])
     .withMessage(
       "'{VALUE}' is not a valid age requirement. Please choose from the predefined age options."

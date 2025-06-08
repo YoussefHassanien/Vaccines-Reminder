@@ -143,9 +143,6 @@ export const bookSlot = async (slotId, vaccineId, nurseId) => {
     if (existingRequest.status !== "Pending") {
       throw new Error("Vaccine request is not in pending status");
     }
-    if (existingRequest.date !== slot.date) {
-      throw new Error("Vaccine request date does not match slot date");
-    }
     existingRequest.nurseId = slot.nurseId;
 
     existingRequest.nurseSlotId = slot._id;
@@ -246,11 +243,15 @@ export const maintainSlots = async () => {
     const nurses = await Nurse.find({});
 
     for (const nurse of nurses) {
-      // Check if nurse has enough future slots
+      // Set dates properly for consistent comparisons
       const today = new Date();
-      const twoWeeksFromToday = new Date();
-      twoWeeksFromToday.setDate(today.getDate() + 14);
+      today.setHours(0, 0, 0, 0); // Start of today
 
+      const twoWeeksFromToday = new Date(today);
+      twoWeeksFromToday.setDate(today.getDate() + 14);
+      twoWeeksFromToday.setHours(0, 0, 0, 0); // Start of the 15th day
+
+      // Count ALL slots (booked and unbooked)
       const existingSlots = await NurseSlot.countDocuments({
         nurseId: nurse._id,
         date: {
@@ -263,21 +264,27 @@ export const maintainSlots = async () => {
       const expectedSlots = 8 * 14;
 
       if (existingSlots < expectedSlots) {
+        const completionPercentage = Math.round(
+          (existingSlots / expectedSlots) * 100
+        );
         console.log(
-          `🔧 Nurse ${nurse._id} has ${existingSlots}/${expectedSlots} slots. Creating missing slots...`
+          `🔧 Nurse ${nurse.fName} ${nurse.lName}: ${nurse._id} has ${existingSlots}/${expectedSlots} slots (${completionPercentage}%). Creating missing slots...`
         );
         await createMissingSlots(nurse._id, today, twoWeeksFromToday);
+      } else {
+        console.log(
+          `✅ Nurse ${nurse.fName} ${nurse.lName}: ${nurse._id} has sufficient slots (${existingSlots}/${expectedSlots})`
+        );
       }
     }
 
-    // Clean up old slots (older than yesterday)
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(23, 59, 59, 999);
+    // Clean up old unbooked slots (past dates)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
     const deletedSlots = await NurseSlot.deleteMany({
-      date: { $lt: yesterday },
-      isBooked: false,
+      date: { $lt: startOfToday },
+      isBooked: false, // Only delete unbooked slots from the past
     });
 
     console.log(
@@ -308,32 +315,46 @@ const createMissingSlots = async (nurseId, startDate, endDate) => {
       { startTime: "16:00", endTime: "17:00" },
     ];
 
+    // Get all existing slots for this nurse in the date range
+    const existingSlots = await NurseSlot.find({
+      nurseId,
+      date: {
+        $gte: startDate,
+        $lt: endDate,
+      },
+    }).select("date startTime endTime");
+
+    // Create a Set of existing slot identifiers for quick lookup
+    const existingSlotSet = new Set(
+      existingSlots.map(
+        (slot) => `${slot.date.toISOString().split("T")[0]}_${slot.startTime}`
+      )
+    );
+
     const slots = [];
     const currentDate = new Date(startDate);
 
+    // Iterate through each day in the range
     while (currentDate < endDate) {
-      // Check if slots already exist for this date
-      const existingSlotCount = await NurseSlot.countDocuments({
-        nurseId,
-        date: {
-          $gte: new Date(currentDate.setHours(0, 0, 0, 0)),
-          $lt: new Date(currentDate.setHours(23, 59, 59, 999)),
-        },
-      });
+      const dateStr = currentDate.toISOString().split("T")[0];
 
-      // If no slots exist for this date, create them
-      if (existingSlotCount === 0) {
-        timeSlots.forEach((timeSlot) => {
+      // Check each time slot for this date
+      timeSlots.forEach((timeSlot) => {
+        const slotIdentifier = `${dateStr}_${timeSlot.startTime}`;
+
+        // If this specific slot doesn't exist, add it to be created
+        if (!existingSlotSet.has(slotIdentifier)) {
           slots.push({
             nurseId,
-            date: new Date(currentDate),
+            date: new Date(currentDate), // Create new Date object to avoid mutation
             startTime: timeSlot.startTime,
             endTime: timeSlot.endTime,
             isBooked: false,
           });
-        });
-      }
+        }
+      });
 
+      // Move to next day
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
@@ -342,6 +363,8 @@ const createMissingSlots = async (nurseId, startDate, endDate) => {
       console.log(
         `✅ Created ${slots.length} missing slots for nurse ${nurseId}`
       );
+    } else {
+      console.log(`ℹ️ No missing slots found for nurse ${nurseId}`);
     }
   } catch (error) {
     console.error(
@@ -351,6 +374,7 @@ const createMissingSlots = async (nurseId, startDate, endDate) => {
     throw error;
   }
 };
+
 /**
  * Get all nurses from the database with pagination
  * @param {number} cursor - ID of the last retrieved nurse

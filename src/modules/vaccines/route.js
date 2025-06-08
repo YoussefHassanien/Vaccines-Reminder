@@ -31,7 +31,6 @@ vaccinesRouter.post(
 vaccinesRouter.get(
   "/",
   retrieveVaccinesForParentLimiter,
-  isAuthenticated,
   retrieveVaccinesForParent
 );
 

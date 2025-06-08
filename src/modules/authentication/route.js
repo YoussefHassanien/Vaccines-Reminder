@@ -1,28 +1,40 @@
 import { Router } from "express";
-const authrouter = Router();
-// import multerUploadHandler from "../../../config/multer.js";
-// import multerErrorHandler from "../../middlewares/multerErrorHandler.js";
 import {
-  loginLimiter,
-  signupLimiter,
-  forgotPasswordLimiter,
-} from "./rateLimiter.js";
-import { login, signup, updatePassword } from "./controller.js";
+  signup,
+  login,
+  forgotPassword,
+  verifyForgotPasswordOTP,
+  resetPassword,
+  updatePassword,
+} from "./controller.js";
 import {
   signupValidator,
   loginValidator,
+  forgotPasswordValidator,
+  resetPasswordValidator,
+  verifyOTPValidator,
   updatePasswordValidator,
 } from "./validation.js";
 import { isAuthenticated } from "../../middlewares/authentication.js";
 
-authrouter.post("/login", loginLimiter, loginValidator, login);
+const authRouter = Router();
 
-authrouter.post("/signup", signupValidator, signup);
-authrouter.put(
-  "/updatePassword",
+// Authentication routes
+authRouter.post("/signup", signupValidator, signup);
+
+authRouter.post("/login", loginValidator, login);
+
+// Update Password route
+authRouter.put(
+  "/update-password",
   isAuthenticated,
   updatePasswordValidator,
   updatePassword
 );
 
-export default authrouter;
+// Forgot Password routes
+authRouter.post("/forgot-password", forgotPasswordValidator, forgotPassword);
+authRouter.post("/verify-otp", verifyOTPValidator, verifyForgotPasswordOTP);
+authRouter.post("/reset-password", resetPasswordValidator, resetPassword);
+
+export default authRouter;

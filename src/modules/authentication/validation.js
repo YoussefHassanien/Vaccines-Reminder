@@ -46,20 +46,6 @@ export const signupValidator = [
         }
       })
     ),
-  check("nationalIdNumer")
-    .notEmpty()
-    .withMessage("SSN is required")
-    .isLength({ min: 14, max: 14 })
-    .withMessage("SSN must be exactly 14 digits")
-    .matches(/^\d+$/)
-    .withMessage("SSN must be numeric")
-    .custom((value) =>
-      User.findOne({ nationalIdNumer: value }).then((user) => {
-        if (user) {
-          return Promise.reject("SSN already exists");
-        }
-      })
-    ),
   check("birthDate")
     .notEmpty()
     .withMessage("date of birth is required")
@@ -154,3 +140,49 @@ export const updatePasswordValidator = [
     }),
   validatorMiddleware,
 ];
+
+export const forgotPasswordValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Invalid email format")
+    .custom(async (value) => {
+      const user = await User.findOne({ email: value });
+      if (!user) {
+        throw new Error("No user found with this email");
+      }
+      return true;
+    }),
+  validatorMiddleware,
+];
+
+export const verifyOTPValidator = [
+  check("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Invalid email format"),
+  check("otp")
+    .notEmpty()
+    .withMessage("OTP is required")
+    .isLength({ min: 6, max: 6 })
+    .withMessage("OTP must be 6 digits"),
+  validatorMiddleware,
+];
+
+export const resetPasswordValidator = [
+  check("resetToken")
+    .notEmpty()
+    .withMessage("Reset token is required")
+    .isLength({ min: 20 })
+    .withMessage("Reset token is invalid"),
+  check("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .isLength({ min: 6 })
+    .withMessage("New password must be at least 6 characters"),
+
+  validatorMiddleware,
+];
+

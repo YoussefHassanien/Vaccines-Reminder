@@ -24,7 +24,7 @@ import {
 } from "../../middlewares/authentication.js";
 
 const tipsRouter = Router();
-tipsRouter.get("/", isAuthenticated, isAuthorized, getAllTips);
+tipsRouter.get("/", getAllTips);
 tipsRouter.post(
   "/milestone",
   isAuthenticated,

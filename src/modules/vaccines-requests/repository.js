@@ -31,6 +31,12 @@ export const getAllVaccineRequests = async () => {
     const vaccineRequests = await VaccineRequest.find()
       .select("-__v")
       .populate({
+        path: "parentId",
+        select: "fName lName _id",
+        model: "User",
+      })
+      .populate({
+
         path: "vaccineId",
         select: "name _id",
       })
@@ -56,7 +62,14 @@ export const getAllVaccineRequests = async () => {
         governorate: vr.governorate,
         city: vr.city,
         street: vr.street,
-        vaccine: vr.vaccineId._id
+
+        parent: vr.parentId
+          ? {
+              _id: vr.parentId._id,
+              name: `${vr.parentId.fName} ${vr.parentId.lName}`,
+            }
+          : null,
+        vaccine: vr.vaccineId
           ? { _id: vr.vaccineId._id, name: vr.vaccineId.name }
           : null,
         nurse: vr.nurseId
@@ -111,7 +124,8 @@ export const getUserVaccineRequests = async (userId) => {
         governorate: vr.governorate,
         city: vr.city,
         street: vr.street,
-        vaccine: vr.vaccineId._id
+        vaccine: vr.vaccineId
+
           ? { _id: vr.vaccineId._id, name: vr.vaccineId.name }
           : null,
         nurse: vr.nurseId
@@ -186,6 +200,7 @@ export const updateVaccineRequestStatus = async (vaccineRequestId, status) => {
   }
 };
 
+
 export const addCertificateToVaccineRequest = async (
   vaccineRequestId,
   certificateUrl
@@ -247,3 +262,4 @@ export const getVaccineCertificate = async (vaccineRequestId) => {
     };
   }
 };
+
