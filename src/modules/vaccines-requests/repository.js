@@ -36,6 +36,7 @@ export const getAllVaccineRequests = async () => {
         model: "User",
       })
       .populate({
+
         path: "vaccineId",
         select: "name _id",
       })
@@ -61,6 +62,7 @@ export const getAllVaccineRequests = async () => {
         governorate: vr.governorate,
         city: vr.city,
         street: vr.street,
+
         parent: vr.parentId
           ? {
               _id: vr.parentId._id,
@@ -123,6 +125,7 @@ export const getUserVaccineRequests = async (userId) => {
         city: vr.city,
         street: vr.street,
         vaccine: vr.vaccineId
+
           ? { _id: vr.vaccineId._id, name: vr.vaccineId.name }
           : null,
         nurse: vr.nurseId
@@ -196,3 +199,67 @@ export const updateVaccineRequestStatus = async (vaccineRequestId, status) => {
     throw error;
   }
 };
+
+
+export const addCertificateToVaccineRequest = async (
+  vaccineRequestId,
+  certificateUrl
+) => {
+  try {
+    const vaccineRequest = await VaccineRequest.findByIdAndUpdate(
+      vaccineRequestId,
+      { certificate: certificateUrl },
+      { new: true, runValidators: true }
+    );
+
+    if (!vaccineRequest) {
+      throw new Error(
+        `Vaccine request with id: ${vaccineRequestId} not found!`
+      );
+    }
+    if (vaccineRequest.status !== "Delivered") {
+      throw new Error(
+        `Vaccine request with id: ${vaccineRequestId} is not delivered yet!`
+      );
+    }
+
+    return formatMongoDbObjects(vaccineRequest);
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const getVaccineCertificate = async (vaccineRequestId) => {
+  try {
+    const vaccineRequest = await VaccineRequest.findById(vaccineRequestId);
+    if (!vaccineRequest) {
+      throw new Error(
+        `Vaccine request with id: ${vaccineRequestId} not found!`
+      );
+    }
+
+    if (!vaccineRequest.certificate) {
+      throw new Error(
+        `Vaccine request with id: ${vaccineRequestId} does not have a certificate!`
+      );
+    }
+    return {
+      data: vaccineRequest.certificate,
+    };
+  } catch (error) {
+    console.error(error);
+    if (error.message.includes("not found")) {
+      throw {
+        statusCode: 404,
+        message: error.message,
+      };
+    }
+    throw {
+      statusCode: 500,
+      message: "Error retrieving vaccine certificate",
+      error: error.message,
+    };
+  }
+};
+

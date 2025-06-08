@@ -5,6 +5,10 @@ import {
   deleteUserVaccineRequest,
   changeNurseSlotIsBooked,
   changeVaccineRequestStatus,
+  addCertificateToVaccineRequestService,
+  getVaccineCertificateService,
+  uploadToCloudinary,
+  getImageCloudinaryUrl,
 } from "./services.js";
 
 /**
@@ -140,3 +144,65 @@ export const modifyVaccineRequestStatus = async (req, res) => {
     });
   }
 };
+
+export const uploadCertificateToVaccineRequest = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: "certificate image is required" });
+  }
+
+  // Upload image to Cloudinary
+  const cloudinaryResult = await uploadToCloudinary(
+    req.file.buffer,
+    req.file.originalname
+  );
+
+  const certificateUrl = getImageCloudinaryUrl(cloudinaryResult.public_id);
+  console.log("Certificate URL:", certificateUrl);
+
+  if (!certificateUrl) {
+    return res
+      .status(400)
+      .json({ message: "Could not retrieve certificate image optimized URL" });
+  }
+
+  const { vaccineRequestId } = req.params;
+
+  try {
+    const { statusCode, message, data } =
+      await addCertificateToVaccineRequestService(
+        vaccineRequestId,
+        certificateUrl
+      );
+
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
+      error: error.error,
+    });
+  }
+};
+
+export const getVaccineCertificate = async (req, res) => {
+  const { vaccineRequestId } = req.params;
+
+  try {
+    const { statusCode, message, data } = await getVaccineCertificateService(
+      vaccineRequestId
+    );
+
+    return res.status(statusCode).json({
+      message,
+      data,
+    });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
+      error: error.error,
+    });
+  }
+};
+

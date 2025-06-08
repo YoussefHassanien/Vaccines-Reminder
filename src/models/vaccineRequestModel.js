@@ -41,6 +41,11 @@ const vaccineRequestSchema = new mongoose.Schema(
       type: Date,
       required: [true, "Vaccination date is required"],
     },
+    certificate: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     phoneNumber: {
       type: String,
       trim: true,
