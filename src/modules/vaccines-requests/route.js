@@ -1,4 +1,6 @@
 import { Router } from "express";
+import multerUploadHandler from "../../../config/multer.js";
+import multerErrorHandler from "../../middlewares/multerErrorHandler.js";
 const vaccineRequestsRouter = Router();
 import {
   createVaccineRequestLimiter,
@@ -13,6 +15,8 @@ import {
   retrieveUserVaccineRequests,
   cancelUserVaccineRequest,
   modifyVaccineRequestStatus,
+  uploadCertificateToVaccineRequest,
+  getVaccineCertificate,
 } from "./controller.js";
 import {
   createVaccineRequestValidator,
@@ -61,6 +65,24 @@ vaccineRequestsRouter.patch(
   isAuthenticated,
   isAuthorized,
   modifyVaccineRequestStatus
+);
+
+vaccineRequestsRouter.post(
+  "/certificate/admin/:vaccineRequestId",
+  isAuthenticated,
+  isAuthorized,
+  (req, res, next) => {
+    multerUploadHandler.single("certificate")(req, res, (err) => {
+      multerErrorHandler(err, req, res, next);
+    });
+  },
+  uploadCertificateToVaccineRequest
+);
+
+vaccineRequestsRouter.get(
+  "/certificate/admin/:vaccineRequestId",
+  isAuthenticated,
+  getVaccineCertificate
 );
 
 export default vaccineRequestsRouter;
