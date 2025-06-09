@@ -36,7 +36,6 @@ export const getAllVaccineRequests = async () => {
         model: "User",
       })
       .populate({
-
         path: "vaccineId",
         select: "name _id",
       })
@@ -96,7 +95,7 @@ export const getUserVaccineRequests = async (userId) => {
   try {
     const vaccineRequests = await VaccineRequest.find({ parentId: userId })
       .select(
-        "status vaccinationDate governorate city street nurseId vaccineId childId"
+        "status vaccinationDate governorate city street nurseId vaccineId childId certificate"
       )
       .populate({
         path: "vaccineId",
@@ -125,7 +124,6 @@ export const getUserVaccineRequests = async (userId) => {
         city: vr.city,
         street: vr.street,
         vaccine: vr.vaccineId
-
           ? { _id: vr.vaccineId._id, name: vr.vaccineId.name }
           : null,
         nurse: vr.nurseId
@@ -200,7 +198,6 @@ export const updateVaccineRequestStatus = async (vaccineRequestId, status) => {
   }
 };
 
-
 export const addCertificateToVaccineRequest = async (
   vaccineRequestId,
   certificateUrl
@@ -262,4 +259,3 @@ export const getVaccineCertificate = async (vaccineRequestId) => {
     };
   }
 };
-
