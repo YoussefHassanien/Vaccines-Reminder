@@ -123,6 +123,7 @@ export const getUserVaccineRequests = async (userId) => {
         governorate: vr.governorate,
         city: vr.city,
         street: vr.street,
+        certificate: vr.certificate,
         vaccine: vr.vaccineId
           ? { _id: vr.vaccineId._id, name: vr.vaccineId.name }
           : null,
