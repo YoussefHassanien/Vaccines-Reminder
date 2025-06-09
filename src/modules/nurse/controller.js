@@ -104,10 +104,13 @@ export const getFreeNurseSlotsById = async (req, res) => {
 
 export const deleteNurse = async (req, res) => {
   try {
-    const { nurseId } = req.params;
-    const { status, message, error } = await deleteNurseById(nurseId);
+    const { id } = req.params; // Changed from nurseId to id
+    const { status, message, error } = await deleteNurseById(id);
     return res.status(status).json({ message, error });
   } catch (error) {
-    return res.status(500).json({ message: error.message, error: error.error });
+    return res.status(500).json({ 
+      message: error.message, 
+      error: error.message 
+    });
   }
 };

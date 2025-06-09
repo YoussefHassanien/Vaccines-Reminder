@@ -173,20 +173,22 @@ export const cancelNurseSlot = async (nurseId, slotId) => {
 
 export const deleteNurseById = async (id) => {
   try {
-    const nurse = await deleteNurse(id);
-    if (!nurse) {
+    const result = await deleteNurse(id);
+    if (!result || !result.nurse) {
       return {
-        status: 400,
-        message: `Could not find the nurse of ID: ${id}`,
+        status: 404,
+        message: `Could not find the nurse with ID: ${id}`,
       };
     }
     return {
       status: 200,
-      message: `nurse with ID ${id} is deleted successfully`,
+      message: `Nurse with ID ${id} is deleted successfully. ${result.deletedSlotsCount} associated slots were also removed.`,
+      data: result.nurse,
     };
   } catch (error) {
     return {
-      message: `Error deleting nurse of ID ${id}`,
+      status: 500,
+      message: `Error deleting nurse with ID ${id}`,
       error: error.message,
     };
   }

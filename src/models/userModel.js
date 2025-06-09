@@ -72,7 +72,6 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Address appartment number must be provided"],
     },
-    // Forgot password fields
     forgotPasswordOTP: {
       type: String,
       default: null,
