@@ -426,19 +426,33 @@ export const getFreeSlots = async (id) => {
 };
 
 /**
- * Delete a nusre by ID
+ * Delete a nurse by ID and clean up associated slots
  * @param {string} id - Nurse ID
- * @returns {Promise<Object>} Deleted nusre document
+ * @returns {Promise<Object>} Deleted nurse document and cleanup info
  */
 export const deleteNurse = async (id) => {
   try {
-    const nusre = await Nurse.findByIdAndDelete(id);
+    // First check if nurse exists
+    const nurse = await Nurse.findById(id);
 
-    if (!nusre) {
+    if (!nurse) {
       throw new Error("Nurse not found");
     }
 
-    return nusre;
+    // Delete all slots associated with this nurse
+    const deletedSlots = await NurseSlot.deleteMany({ nurseId: id });
+
+    // Delete the nurse
+    const deletedNurse = await Nurse.findByIdAndDelete(id);
+
+    console.log(
+      `✅ Deleted nurse ${id} and ${deletedSlots.deletedCount} associated slots`
+    );
+
+    return {
+      nurse: deletedNurse,
+      deletedSlotsCount: deletedSlots.deletedCount,
+    };
   } catch (error) {
     console.error(`Error deleting Nurse with ID ${id}:`, error);
     throw error;
