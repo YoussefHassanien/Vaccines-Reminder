@@ -442,7 +442,7 @@ export const getUserOnlinePaidAndWaitingCarts = async (userId) => {
     // Get user's carts with "Confirmed" or "Waiting for cash payment" status
     const carts = await Cart.find({
       userId,
-      status: { $in: ["Confirmed", "Waiting for cash payment", "Delivered"] },
+      status: { $in: ["Online paid", "Waiting for cash payment", "Delivered"] },
     })
       .sort({ updatedAt: -1 })
       .select("-__v -createdAt -updatedAt") // Exclude unwanted fields
